@@ -8,11 +8,15 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from functools import lru_cache, partial
 from multiprocessing import Pool, cpu_count
+import os
 
-k, Pk, _ = np.loadtxt('./power.dat', skiprows=1).T
+this_dir, this_filename = os.path.split(__file__)
+
+k, Pk, _ = np.loadtxt(os.path.join(this_dir, 'data', 'power.dat'),
+                      skiprows=1).T
 Pk *= 2*np.pi**2 * 4*np.pi
-k = k[::50]
-Pk = Pk[::50]
+k = k[::1]
+Pk = Pk[::1]
 
 # Pk = k**-2
 
@@ -155,7 +159,7 @@ class Correlator(object):
 
         self.nproc = nproc
 
-    def add_point(self, pos, elements, R, constrains={}, name=None, frame=None):
+    def add_point(self, pos, elements, R, constrains={}, name=None):
         '''Add a constrain at position pos with given elements
 
         Param
@@ -163,8 +167,7 @@ class Correlator(object):
         pos: array_like
             Spatial position of the point
         elements: str list
-            Can be potential, acceleration, density, density_gradient,
-            hessian.
+            See note below for accepted elements
         R: float
             Smoothing scale at the point
         values, dict_like:
@@ -180,6 +183,14 @@ class Correlator(object):
         density, 3 for its gradient and 6 for the hessian.  The
         convention for the hessian is xx, yy, zz, xy, xz, yz (diagonal
         first, then off-diagonal).
+
+        Accepted elements are:
+        * potential (phi): the gravitational potential
+        * acceleration (a): the acceleration
+        * tide: the tidal tensor
+        * density (delta): the overdensity
+        * density_density (grad_delta): the gradient of the density
+        * hessian: the hessian of the density
         '''
         self.Npts += 1
         # K factors
@@ -200,6 +211,7 @@ class Correlator(object):
                 cons.extend([np.nan] * n)
             smoothing_scales.extend([R] * n)
             new_pos.extend([pos] * n)
+            ipoint.extend([self.nPts - 1] * n)
 
         # Compute k factors
         for e in elements:
@@ -268,6 +280,7 @@ class Correlator(object):
         self.constrains.extend(cons)
         self.smoothing_scales.extend(smoothing_scales)
         self.signs.extend(sign)
+        self.ipoint = ipoint
 
         # Format the labels
         self.labels.extend((l % {'name': (name if name is not None else
@@ -278,6 +291,8 @@ class Correlator(object):
 
         self.labels_c = [self.labels[i] for i in range(Nlabel)
                          if np.isnan(self.constrains[i])]
+
+        return self.Npts-1 
 
     @property
     def cov(self):
