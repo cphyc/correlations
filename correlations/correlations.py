@@ -10,6 +10,8 @@ from functools import lru_cache, partial
 from multiprocessing import Pool, cpu_count
 import os
 
+from .utils import integrand_lambdaCDM as integrand_cython
+
 this_dir, this_filename = os.path.split(__file__)
 
 k, Pk, _ = np.loadtxt(os.path.join(this_dir, 'data', 'power.dat'),
@@ -47,8 +49,8 @@ def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
 
     # Integrate
     res = dblquad(
-        integrand,
-        0, pi,                                # theta bounds
+        integrand_cython,
+        0, pi,                      # theta bounds
         lambda theta: 0, lambda theta: 2*pi,  # phi bounds
         epsrel=1e-3, epsabs=1e-6,
         args=(ikx, iky, ikz, ikk, dX, R1, R2))[0]
@@ -104,7 +106,7 @@ k2 = k**2
 dk = np.diff(k)
 
 
-def integrand(phi, theta, ikx, iky, ikz, ikk, dX, R1, R2):
+def python_integrand(phi, theta, ikx, iky, ikz, ikk, dX, R1, R2):
     '''
     Compute the integral of the correlation along the k direction
     using trapezoidal rule.
@@ -210,7 +212,6 @@ class Correlator(object):
                 cons.extend([np.nan] * n)
             smoothing_scales.extend([R] * n)
             new_pos.extend([pos] * n)
-            ipoint.extend([self.nPts - 1] * n)
 
         # Compute k factors
         for e in elements:
@@ -279,7 +280,6 @@ class Correlator(object):
         self.constrains.extend(cons)
         self.smoothing_scales.extend(smoothing_scales)
         self.signs.extend(sign)
-        self.ipoint = ipoint
 
         # Format the labels
         self.labels.extend((l % {'name': (name if name is not None else
@@ -291,7 +291,7 @@ class Correlator(object):
         self.labels_c = [self.labels[i] for i in range(Nlabel)
                          if np.isnan(self.constrains[i])]
 
-        return self.Npts-1 
+        return self.Npts-1
 
     @property
     def cov(self):

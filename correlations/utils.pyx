@@ -18,6 +18,8 @@ cdef int Nk
 _k, _Pktmp, blip = np.loadtxt('/home/ccc/Documents/prog/correlations/correlations/data/power.dat', skiprows=1).T
 _Pk = _Pktmp * twopi2 * 4*np.pi
 Nk = len(_k)
+_k2Pk = np.array(_k)**2 * np.array(_Pk)
+cdef eightpi3 = 8 * pi**3
 
 def constrain(mean, cov, values):
     '''Return the constrained mean and covariance given the values.
@@ -103,7 +105,7 @@ cpdef double Pk_CDM(double k):
     return (k - kl) / (kr - kl) * (Pkr - Pkl) + Pkl
 
 cdef double Pk(double k):
-    return Pk_power_law(k)
+    return Pk_CDM(k)
 
 ################################################################################
 # Compute sigma
@@ -128,12 +130,9 @@ cpdef sigma_G(int i, double R):
 
 ################################################################################
 # Compute integrand
-cpdef double integrand(double k, double phi, double theta, int ikx, int iky, int ikz, int ikk,
-                       double dx, double dy, double dz, double R1, double R2):
-    '''
-    Compute the integral of the correlation along the k direction
-    using trapezoidal rule.
-    '''
+cpdef double integrand(
+       double k, double phi, double theta, int ikx, int iky, int ikz, int ikk,
+       double dx, double dy, double dz, double R1, double R2):
     cdef double sin_theta, cos_theta, ksin, kx, ky, kz
     cdef int ii
     cdef double exppart, intgd, k2Pk
@@ -151,35 +150,101 @@ cpdef double integrand(double k, double phi, double theta, int ikx, int iky, int
     # Compute parity
     ii = ikx + iky + ikz - ikk
 
-    exppart = (np.exp(-1j * (kx * dx + ky * dy + kz * dz)))
+    if ii % 2 == 0:
+        exppart = (-1)**(ii//2) * cos((kx * dx + ky * dy + kz * dz))
+    else:
+        exppart = (-1)**((ii-1)//2) * sin((kx * dx + ky * dy + kz * dz))
 
     intgd = (
-        k2Pk * sin_theta * (
-            kx**ikx *
-            ky**iky *
-            kz**ikz /
-            k**ikk) *
+        k2Pk * sin_theta *
         exppart *
         WG(k * R1) * WG(k * R2)
     )
+    if ikx != 0:
+        intgd *= kx**ikx
+    if iky != 0:
+        intgd *= ky**iky
+    if ikz != 0:
+        intgd *= kz**ikz
+    if ikk != 0:
+        intgd /= k**ikk
 
-    return intgd
+    return intgd / eightpi3
+
+cpdef double integrand_lambdaCDM(double phi, double theta, int ikx, int iky, int ikz, int ikk,
+                                double dx, double dy, double dz, double R1, double R2):
+    '''
+    Compute the integral of the correlation along the k direction
+    using trapezoidal rule.
+    '''
+    cdef double sin_theta, cos_theta, ksin, kx, ky, kz
+    cdef int ii
+    cdef double exppart, intgd, k, kprev, cur, prev
+
+    sin_theta = sin(theta)
+    cos_theta = cos(theta)
+
+    intgd = 0
+    cur = 0
+    prev = 0
+    # Compute parity
+    ii = ikx + iky + ikz - ikk
+
+    for i in range(Nk):
+        k = _k[i]
+        kx = k * sin_theta * cos(phi)
+        ky = k * sin_theta * sin(phi)
+        kz = k * cos_theta
+
+        if ii % 2 == 0:
+            exppart = (-1)**(ii//2) * cos((kx * dx + ky * dy + kz * dz))
+        else:
+            exppart = (-1)**((ii-1)//2) * sin((kx * dx + ky * dy + kz * dz))
+        
+        cur = (
+            _k2Pk[i] * sin_theta * exppart * WG(k * R1) * WG(k * R2)
+        )
+
+        if ikx != 0:
+            cur *= kx**ikx
+        if iky != 0:
+            cur *= ky**iky
+        if ikz != 0:
+            cur *= kz**ikz
+        if ikk != 0:
+            cur /= k**ikk
+
+        if i > 0:
+            intgd += (k - kprev) * (prev + cur) / 2
+
+        kprev = k
+        prev = cur
+
+    return intgd / eightpi3
 
 def compute_correlation(int ikx, int iky, int ikz, int ikk,
                         double dx, double dy, double dz, double R1, double R2,
-                        int sign1, int sign2, int nsigma1, int nsigma2):
+                        int sign1, int sign2, int nsigma1, int nsigma2,
+                        str Pkchoice
+    ):
     cdef double s1s2
     cdef double kmin = _k[0], kmax = _k[Nk-1]
 
     s1s2 = sign1 * sigma_G(nsigma1, R1) * sign2 * sigma_G(nsigma2, R2)
 
-    res, _ = tplquad(integrand,
-                     0, pi,                                  # boundaries on theta
-                     lambda theta: 0, lambda theta: twopi,             # boundaries on phi
-                     lambda theta, phi: 0, lambda theta, phi: np.inf,  # boundaries on k
-                     epsrel=1e-3, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
-    )
-    return res / s1s2 / (8*np.pi**3)
+    if Pkchoice == 'power-law':
+        res, _ = tplquad(integrand,
+                         0, pi,                                   # boundaries on theta
+                         lambda theta: 0, lambda theta: twopi,              # boundaries on phi
+                         lambda theta, phi: kmin, lambda theta, phi: kmax,  # boundaries on k
+                         epsrel=1e-6, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
+        )
+    elif Pkchoice == 'Lambda-CDM':
+        res, _ = dblquad(integrand_lambdaCDM,
+                         0, pi, lambda theta: 0, lambda theta: twopi,
+                         epsrel=1e-6, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
+        )
+    return res / s1s2
 
 
 # @cython.boundscheck(False)
