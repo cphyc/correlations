@@ -55,19 +55,19 @@ def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
 
     # Integrate
     res = dblquad(
-        integrand_python,
+        integrand_cython,
         0, pi,                      # theta bounds
         lambda theta: 0, lambda theta: 2*pi,  # phi bounds
         epsrel=1e-3, epsabs=1e-5,
         args=(ikx, iky, ikz, ikk, *dX, R1, R2))[0]
 
-    # Integrate
-    res2 = nquad(
-        integrand_cython,
-        ((0, 2*pi), (0, pi)),
-        args=(ikx, iky, ikz, ikk, *dX, R1, R2))[0]
+    # # Integrate
+    # res2 = nquad(
+    #     integrand_ython,
+    #     ((0, 2*pi), (0, pi)),
+    #     args=(ikx, iky, ikz, ikk, *dX, R1, R2))[0]
 
-    assert np.isclose(res, res2)
+    # assert np.isclose(res, res2)
 
     # Divide by sigmas
     res /= s1s2
