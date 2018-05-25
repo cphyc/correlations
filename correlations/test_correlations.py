@@ -1,11 +1,13 @@
 from correlations.correlations import Correlator, sigma
 import numpy as np
 
+
 def is_def_positive(A):
     eigvals = np.linalg.eigvalsh(A)
     if not all(eigvals > 0):
         print('Matrix not inversible', eigvals)
     assert all(eigvals > 0)
+
 
 def test_validation_invalidation():
     '''Validation/invalidation'''
@@ -32,6 +34,7 @@ def test_validation_invalidation():
 
     # Check the matrix is definite positive
     is_def_positive(c.cov)
+
 
 def test_nu():
     '''nu-nu correlations'''
@@ -97,8 +100,9 @@ def test_zerolag():
     expected = np.triu(expected)
     expected = (expected + expected.T) - np.diag(np.diag(expected))
 
-    print(np.round(c.cov*15, 3)[10:, :10])
-    print(np.round(expected*15, 3)[10:, :10])
+    print((c.cov - expected) / expected)
+    # print(np.round(c.cov*15, 5))
+    # print(np.round(expected*15, 5))
     assert np.allclose(c.cov, expected)
 
     # Check the matrix is definite positive

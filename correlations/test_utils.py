@@ -60,10 +60,10 @@ def test_integrand():
 
 def test_integration():
     kmin, kmax = k[0], k[-1]
-    ikx, iky, ikz, ikk = 0, 0, 0, 0
+    ikx, iky, ikz, ikk = 0, 0, 1, 2  # This is chosen randomly
     xyz = np.array([0, 0, 0])
 
-    def test_x(x):
+    def test_x(x, ikx, ikk, iky):
         xyz[0] = x
 
         ref = dblquad(integrand_python,
@@ -71,7 +71,7 @@ def test_integration():
                       lambda _: 0, lambda _: 2*np.pi,
                       args=(ikx, iky, ikz, ikk, *xyz, 1, 1))[0]
 
-        def do_integration(x, integrator, integrand):
+        def do_integration(x, ikx, iky, ikk, integrator, integrand):
             a, da = integrator(integrand, *bounds, **kwa)
             print('expected %s, got %s' % (ref, a))
             assert np.isclose(a, ref, rtol=1e-3)
@@ -80,10 +80,10 @@ def test_integration():
                    args=(ikx, iky, ikz, ikk, *list(xyz), 1, 1))
 
         bounds = (0, np.pi, lambda _: 0, lambda _: 2*np.pi)
-        yield do_integration, x, dblquad, u.integrand_lambdaCDM
+        yield do_integration, x, ikx, iky, ikk, dblquad, u.integrand_lambdaCDM
 
         bounds = (0, np.pi, lambda _: 0, lambda _: 2*np.pi, lambda _1, _2: 0, lambda _1, _2: np.inf)
-        yield do_integration, x, tplquad, u.integrand
+        yield do_integration, x, ikx, iky, ikk, tplquad, u.integrand
 
         kwa = dict(
             opts=[
@@ -95,8 +95,11 @@ def test_integration():
 
         # Note: the integration order is the opposite for nquad...
         bounds = ([(0, np.inf), (0, 2*np.pi), (0, np.pi)], )
-        yield do_integration, x, nquad, u.integrand
+        yield do_integration, x, ikx, iky, ikk, nquad, u.integrand
 
-    for x in np.linspace(0, 2, 20):
-        for _ in test_x(x):
-            yield _
+    for x in np.linspace(0, 2, 5):
+        for ikk in [2, 0]:
+            for ikx in [0, 1, 2]:
+                for iky in [0, 1]:
+                    for _ in test_x(x, ikx, ikk, iky):
+                        yield _

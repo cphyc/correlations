@@ -48,7 +48,7 @@ def constrain(mean, cov, values):
 
     return np.array(mean_cons).flatten(), np.array(cov_cons)
 
-    
+
 ################################################################################
 # Filters
 @cython.cdivision(True)
@@ -121,17 +121,22 @@ cdef class Utils:
     @cython.cdivision(True)
     @cython.wraparound(False)
     cpdef double sigma(self, int i, double R):
-        cdef double integrand, prev, cur, k, Pk
+        cdef double integrand, prev, cur, k, Pk, kprev
+        cdef double[:] _Pk, _k
         cdef int j
+
+        _Pk = self.Pk
+        _k = self.k
 
         integrand = 0
         for j in range(self.Nk):
-            k = self.k[j]
-            Pk = self.Pk[j]
+            k = _k[j]
+            Pk = _Pk[j]
             cur = k**(2+2*i) * Pk * exp(-(k*R)**2)
             if j > 0:
-                integrand += (prev + cur) / 2 * (k - self.k[j-1])
+                integrand += (prev + cur) / 2 * (k - kprev)
             prev = cur
+            kprev = k
 
         return sqrt(integrand / twopi2)
 
@@ -147,12 +152,12 @@ cdef class Utils:
     # cpdef sigma_TH(int i, double R):
     #     cdef double sigma2, err
     #     sigma2, err = quad(_sigma_integrand_TH, self.k[0], self.k[self.Nk-1], (i, R))
-    #     return sqrt(sigma2) 
+    #     return sqrt(sigma2)
 
     # cpdef sigma_G(int i, double R):
     #     cdef double sigma2, err
     #     sigma2, err = quad(_sigma_integrand_G, self.k[0], self.k[self.Nk-1], (i, R))
-    #     return sqrt(sigma2)    
+    #     return sqrt(sigma2)
 
 
     ################################################################################
@@ -178,10 +183,7 @@ cdef class Utils:
         # Compute parity
         ii = ikx + iky + ikz - ikk
 
-        if ii % 2 == 0:
-            exppart = (-1)**(ii//2) * cos((kx * dx + ky * dy + kz * dz))
-        else:
-            exppart = (-1)**((ii-1)//2) * sin((kx * dx + ky * dy + kz * dz))
+        exppart = cos((kx * dx + ky * dy + kz * dz) - ii*pi/2)
 
         intgd = (
             k2Pk * sin_theta *
@@ -199,6 +201,8 @@ cdef class Utils:
 
         return intgd / eightpi3
 
+    @cython.boundscheck(False)
+    @cython.cdivision(True)
     cpdef double integrand_lambdaCDM(self, double phi, double theta, int ikx, int iky, int ikz, int ikk,
                                      double dx, double dy, double dz, double R1, double R2):
         '''
@@ -208,6 +212,14 @@ cdef class Utils:
         cdef double sin_theta, cos_theta, ksin, kx, ky, kz
         cdef int ii
         cdef double exppart, intgd, k, kprev, cur, prev
+        cdef double tmp
+
+        cdef double[:] _Pk, _k, _k2Pk
+
+        _Pk = self.Pk
+        _k = self.k
+        _k2Pk = self.k2Pk
+
 
         sin_theta = sin(theta)
         cos_theta = cos(theta)
@@ -215,22 +227,25 @@ cdef class Utils:
         intgd = 0
         cur = 0
         prev = 0
+
         # Compute parity
         ii = ikx + iky + ikz - ikk
 
         for i in range(self.Nk):
-            k = self.k[i]
+            k = _k[i]
             kx = k * sin_theta * cos(phi)
             ky = k * sin_theta * sin(phi)
             kz = k * cos_theta
 
-            if ii % 2 == 0:
-                exppart = (-1)**(ii//2) * cos((kx * dx + ky * dy + kz * dz))
-            else:
-                exppart = (-1)**((ii-1)//2) * sin((kx * dx + ky * dy + kz * dz))
+            exppart = cos((kx * dx + ky * dy + kz * dz) - ii*pi/2)
+
+            # tmp = (np.exp(-1j * (kx * dx + ky * dy + kz * dz))
+            #                * (1j)**(ii)).real
+            # if not np.isclose(tmp, exppart):
+            #     print(tmp, exppart)
 
             cur = (
-                self.k2Pk[i] * sin_theta * exppart * WG(k * R1) * WG(k * R2)
+                _k2Pk[i] * sin_theta * exppart * WG(k * R1) * WG(k * R2)
             )
 
             if ikx != 0:
