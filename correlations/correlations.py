@@ -1,16 +1,16 @@
 import numpy as np
 from numpy import sqrt, pi, cos, sin
 from scipy.integrate import dblquad
-from numba import jit
 from itertools import combinations_with_replacement
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from functools import lru_cache, partial
+from functools import lru_cache, partial, wraps
 from multiprocessing import Pool, cpu_count
 import os
 
-from .utils import integrand_lambdaCDM as integrand_cython
+from .utils import Utils
+
 
 this_dir, this_filename = os.path.split(__file__)
 
@@ -20,16 +20,22 @@ Pk *= 2*np.pi**2 * 4*np.pi
 k = k[::1]
 Pk = Pk[::1]
 
+utils = Utils(k, Pk)
+sigma = utils.sigma
+integrand_cython = utils.integrand
+
 # Pk = k**-2
 
 twopi2 = 2 * np.pi**2
 dk = np.diff(k)
 
 
-def sigma(i, R):
-    # Note: below we use exp(-(kR)**2) == exp(-(kR)**2/2) **2
-    integrand = k**(2*i+2) * Pk * np.exp(-(k * R)**2) / twopi2
-    return sqrt(np.sum((integrand[1:] + integrand[:-1]) * dk) / 2)
+# def sigma(i, R):
+#     # Note: below we use exp(-(kR)**2) == exp(-(kR)**2/2) **2
+#     integrand = k**(2*i+2) * Pk * np.exp(-(k * R)**2) / twopi2
+#     ret = sqrt(np.sum((integrand[1:] + integrand[:-1]) * dk) / 2)
+
+#     return ret
 
 
 def odd(i):
@@ -52,7 +58,7 @@ def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
         integrand_python,
         0, pi,                      # theta bounds
         lambda theta: 0, lambda theta: 2*pi,  # phi bounds
-        epsrel=1e-3, epsabs=1e-4,
+        epsrel=1e-3, epsabs=1e-5,
         args=(ikx, iky, ikz, ikk, *dX, R1, R2))[0]
 
     # Divide by sigmas
@@ -140,7 +146,7 @@ def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
 
 
 class Correlator(object):
-    def __init__(self, nproc=None):
+    def __init__(self, nproc=None, quiet=False):
         self.kxfactor = []
         self.kyfactor = []
         self.kzfactor = []
@@ -158,6 +164,23 @@ class Correlator(object):
 
         self.nproc = nproc if nproc else 1
 
+        self._covariance_valid = False
+        if quiet:
+            def pbar(iterable, *args, **kwa):
+                return iterable
+            self._pbar = pbar
+        else:
+            self._pbar = tqdm
+
+    def invalidate_covariance(fun):
+        @wraps(fun)
+        def wrapper(self, *args, **kwa):
+            self._covariance_valid = False
+            return fun(self, *args, **kwa)
+
+        return wrapper
+
+    @invalidate_covariance
     def add_point(self, pos, elements, R, constrains={}, name=None):
         '''Add a constrain at position pos with given elements
 
@@ -300,7 +323,7 @@ class Correlator(object):
         '''
         The (unconstrained) covariance matrix
         '''
-        if hasattr(self, '_covariance'):
+        if self._covariance_valid:
             return self._covariance
 
         self.compute_covariance()
@@ -344,7 +367,7 @@ class Correlator(object):
                 else:
                     print('Running with %s processes.' % cpu_count())
 
-                for i1, i2, value in tqdm(
+                for i1, i2, value in self._pbar(
                         p.imap_unordered(
                             fun, iterator,
                             chunksize=Ndim//2),
@@ -352,13 +375,15 @@ class Correlator(object):
 
                     cov[i1, i2] = cov[i2, i1] = value
         else:
-            for i1, i2 in tqdm(iterator, total=Ndim*(Ndim+1)//2):
+            for i1, i2 in self._pbar(iterator, total=Ndim*(Ndim+1)//2):
                 _, _, value = fun((i1, i2))
                 cov[i1, i2] = cov[i2, i1] = value
         self._covariance = cov
 
         if any(np.linalg.eigvalsh(cov) <= 0):
             print('WARNING: the covariance matrix is not positive definite.')
+
+        self._covariance_valid = True
         return cov
 
     @property

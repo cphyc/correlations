@@ -1,5 +1,5 @@
-from correlations.utils import sigma_TH, Pk_CDM, compute_correlation, integrand, integrand_lambdaCDM
-from correlations.correlations import _correlation, integrand as py_integrand
+from correlations.utils import Utils
+from correlations.correlations import integrand_python
 import numpy as np
 from time import time
 from scipy.integrate import tplquad, dblquad, nquad
@@ -7,18 +7,31 @@ from scipy.integrate import tplquad, dblquad, nquad
 k, Pk, blip = np.loadtxt('/home/ccc/Documents/prog/correlations/correlations/data/power.dat', skiprows=1).T
 Pk *= 8*np.pi**3
 
+u = Utils(k, Pk)
+
+
+def check_close(a, b, rtol=1e-4):
+    if not np.isclose(a, b, rtol=rtol):
+        print('%s != %s' % (a, b))
+        assert False
+
 
 def test_Pk():
     """Test that the cython-version of Pk recovers Pk"""
-    assert np.allclose(Pk, np.vectorize(Pk_CDM)(k))
-    assert np.isclose(sigma_TH(0, 8), 0.81590744, rtol=1e-4)
+    assert np.allclose(Pk, np.vectorize(u.Pk_CDM)(k))
 
 
-ikx, iky, ikz, ikk = 1, 0, 0, 2
-dx, dy, dz = 0, 0, 0
-R1, R2 = 1, 1
-sign1, sign2 = 1, 1
-nsigma1, nsigma2 = 0, 0
+def test_sigma():
+    def ref_sigma(i, R):
+        integrand = k**(2*i+2) * Pk * np.exp(-(k * R)**2) / (2*np.pi**2)
+        ret = np.sqrt(np.sum((integrand[1:] + integrand[:-1]) * np.diff(k)) / 2)
+        return ret
+
+    print(ref_sigma(0, 8))
+    for i in range(-2, 3):
+        for R in np.linspace(1e-1, 20):
+            print(i, R)
+            check_close(ref_sigma(i, R), u.sigma(i, R))
 
 
 def test_integrand():
@@ -31,11 +44,11 @@ def test_integrand():
 
         def check_it(theta, phi):
 
-            intgd = np.vectorize(lambda kk: integrand(kk, phi, theta, *args))(k)
+            intgd = np.vectorize(lambda kk: u.integrand(kk, phi, theta, *args))(k)
 
-            a = py_integrand(phi, theta, 0, 0, 0, 0, np.array([0, 0, 0]), 1, 1)
+            a = integrand_python(phi, theta, 0, 0, 0, 0, 0, 0, 0, 1, 1)
             b = np.trapz(intgd, k)
-            c = integrand_lambdaCDM(phi, theta, *args)
+            c = u.integrand_lambdaCDM(phi, theta, *args)
 
             print(a, b, c)
 
@@ -46,66 +59,43 @@ def test_integrand():
 
 
 def test_integration():
-    """Integration should converge to the same result"""
-    for dx in np.linspace(0, 10):
-        before = time()
-        a = compute_correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
-                                sign1, sign2, nsigma1, nsigma2,
-                                Pkchoice='power-law')
-        print('CDM: %10.1fms' % ((time() - before)*1e3), end='\t')
-
-        b = compute_correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
-                                sign1, sign2, nsigma1, nsigma2,
-                                Pkchoice='Lambda-CDM')
-        print('trapz: %10.1fms' % ((time() - before)*1e3), end='\t')
-
-        before = time()
-        c = _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
-                         sign1, sign2, nsigma1, nsigma2)
-        print('Numpy:  %10.1fms' % ((time() - before)*1e3))
-
-        if not (np.isclose(a, b, rtol=1e-3) and np.isclose(a, c, rtol=1e-3)):
-            print('E: %s %s %s' % (a, b, c))
-            assert np.isclose(a, b, rtol=1e-3)
-            assert np.isclose(a, c, rtol=1e-3)
-
-def test_integration():
     kmin, kmax = k[0], k[-1]
     ikx, iky, ikz, ikk = 0, 0, 0, 0
     xyz = np.array([0, 0, 0])
 
     def test_x(x):
-        ref = dblquad(py_integrand,
+        xyz[0] = x
+
+        ref = dblquad(integrand_python,
                       0, np.pi,
                       lambda _: 0, lambda _: 2*np.pi,
-                      args=(ikx, iky, ikz, ikk, xyz, 1, 1))[0]
+                      args=(ikx, iky, ikz, ikk, *xyz, 1, 1))[0]
 
         def do_integration(x, integrator, integrand):
             a, da = integrator(integrand, *bounds, **kwa)
             print('expected %s, got %s' % (ref, a))
             assert np.isclose(a, ref, rtol=1e-3)
 
-        xyz[0] = x
-        kwa = dict(epsrel=1e-6,
+        kwa = dict(epsrel=1e-5,
                    args=(ikx, iky, ikz, ikk, *list(xyz), 1, 1))
 
         bounds = (0, np.pi, lambda _: 0, lambda _: 2*np.pi)
-        yield do_integration, x, dblquad, integrand_lambdaCDM
+        yield do_integration, x, dblquad, u.integrand_lambdaCDM
 
         bounds = (0, np.pi, lambda _: 0, lambda _: 2*np.pi, lambda _1, _2: 0, lambda _1, _2: np.inf)
-        yield do_integration, x, tplquad, integrand
+        yield do_integration, x, tplquad, u.integrand
 
         kwa = dict(
             opts=[
                 {'epsrel': 1e-6},  # k integral
                 {'epsrel': 1e-6},  # phi integral
-                {'epsrel': 1e-6, 'weight': 'alg', 'wvar': (0, 0)}   # theta integral
+                {'epsrel': 1e-6}   # theta integral
             ],
             args=(ikx, iky, ikz, ikk, *list(xyz), 1, 1))
-        
+
         # Note: the integration order is the opposite for nquad...
-        bounds = ([(kmin, kmax), (0, 2*np.pi), (0, np.pi)], )
-        yield do_integration, x, nquad, integrand
+        bounds = ([(0, np.inf), (0, 2*np.pi), (0, np.pi)], )
+        yield do_integration, x, nquad, u.integrand
 
     for x in np.linspace(0, 2, 20):
         for _ in test_x(x):
