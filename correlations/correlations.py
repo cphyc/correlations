@@ -49,11 +49,11 @@ def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
 
     # Integrate
     res = dblquad(
-        integrand_cython,
+        integrand_python,
         0, pi,                      # theta bounds
         lambda theta: 0, lambda theta: 2*pi,  # phi bounds
-        epsrel=1e-3, epsabs=1e-6,
-        args=(ikx, iky, ikz, ikk, dX, R1, R2))[0]
+        epsrel=1e-3, epsabs=1e-4,
+        args=(ikx, iky, ikz, ikk, *dX, R1, R2))[0]
 
     # Divide by sigmas
     res /= s1s2
@@ -106,7 +106,7 @@ k2 = k**2
 dk = np.diff(k)
 
 
-def python_integrand(phi, theta, ikx, iky, ikz, ikk, dX, R1, R2):
+def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
     '''
     Compute the integral of the correlation along the k direction
     using trapezoidal rule.
@@ -114,8 +114,6 @@ def python_integrand(phi, theta, ikx, iky, ikz, ikk, dX, R1, R2):
     sin_theta = sin(theta)
     cos_theta = cos(theta)
     ksin = k * sin_theta
-
-    dx, dy, dz = dX
 
     kx = ksin * cos(phi)
     ky = ksin * sin(phi)
@@ -158,7 +156,7 @@ class Correlator(object):
         self.k = k
         self.Pk = Pk
 
-        self.nproc = nproc
+        self.nproc = nproc if nproc else 1
 
     def add_point(self, pos, elements, R, constrains={}, name=None):
         '''Add a constrain at position pos with given elements
@@ -204,6 +202,10 @@ class Correlator(object):
         new_pos = []
         labels = []
         sign = []
+
+        pos = np.asarray(pos)
+        if pos.ndim > 1:
+            raise Exception('pos argument should have ndim=1')
 
         def add(e, n):
             if e in constrains:
@@ -335,18 +337,24 @@ class Correlator(object):
                       kfactor=kfactor, signs=signs, sigma_f=sigma_f,
                       RR=RR, constrains=self.constrains)
 
-        with Pool(self.nproc) as p:
-            if self.nproc:
-                print('Running with %s processes.' % self.nproc)
-            else:
-                print('Running with %s processes.' % cpu_count())
+        if self.nproc > 1:
+            with Pool(self.nproc) as p:
+                if self.nproc:
+                    print('Running with %s processes.' % self.nproc)
+                else:
+                    print('Running with %s processes.' % cpu_count())
 
-            for i1, i2, value in tqdm(p.imap_unordered(
-                    fun, iterator,
-                    chunksize=Ndim//2),
-                                      total=Ndim*(Ndim+1)//2):
+                for i1, i2, value in tqdm(
+                        p.imap_unordered(
+                            fun, iterator,
+                            chunksize=Ndim//2),
+                        total=Ndim*(Ndim+1)//2):
+
+                    cov[i1, i2] = cov[i2, i1] = value
+        else:
+            for i1, i2 in tqdm(iterator, total=Ndim*(Ndim+1)//2):
+                _, _, value = fun((i1, i2))
                 cov[i1, i2] = cov[i2, i1] = value
-
         self._covariance = cov
 
         if any(np.linalg.eigvalsh(cov) <= 0):
