@@ -104,7 +104,6 @@ k2 = k**2
 dk = np.diff(k)
 
 
-@jit(target='cpu', nopython=True, nogil=True)
 def integrand(phi, theta, ikx, iky, ikz, ikk, dX, R1, R2):
     '''
     Compute the integral of the correlation along the k direction
