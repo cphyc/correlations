@@ -64,7 +64,7 @@ contains
     real(dp) :: integrand
 
     tmp = k2Pk * k**(2*ii) * exp(-(k*R)**2)
-    integrand = sum((tmp(1:) + tmp(:-1)) * dk) / 2
+    integrand = sum((tmp(2:Nk) + tmp(1:Nk-1)) * dk) / 2
 
     res = sqrt(integrand / twopi2)
   end subroutine sigma
@@ -219,7 +219,7 @@ contains
     type(params_t), pointer :: p
 
     real(c_double) :: sincos, sinsin, cos_theta, sin_theta, iipio2
-    real(c_double) :: prev, cur, kk, kprev, res
+    real(c_double) :: prev, cur, kk, res
 
     ! real(c_double) :: kx, ky, kz, foo
     integer :: i
@@ -236,7 +236,6 @@ contains
 
     ! Initialize variables
     res = 0
-    kprev = 0
     prev = 0
 
     ! Integrate in k direction using trapezoidal rule
@@ -249,10 +248,9 @@ contains
        if (p%iky /= 0) cur = cur * sinsin**p%iky
        if (p%ikz /= 0) cur = cur * cos_theta**p%ikz
 
-       if (i > 0) &
-            res = res + (kk - kprev) * (prev + cur) / 2
+       if (i > 1) &
+            res = res + dk(i-1) * (prev + cur) / 2
 
-       kprev = kk
        prev = cur
     end do
 
