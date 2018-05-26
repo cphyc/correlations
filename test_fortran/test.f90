@@ -32,19 +32,24 @@ program test
 
   ! Test integration
   block
-    integer :: ikx, ikk
+    integer :: ikx, iky, ikz, ikk
     do ikx = 0, 2
-       do ikk = 0, 2, 2
-          N = 1
-          call dtime(values, time)
-          do i = 1, N
-             call integrate(1._dp, 0._dp, 0._dp, 1._dp, 1._dp, ikx, 0, 0, ikk, tmp)
+       do iky = 0, 2
+          do ikz = 0, 2
+             do ikk = 0, 2, 2
+                N = 1
+                call dtime(values, time)
+                do i = 1, N
+                   call integrate(1._dp, 0._dp, 0._dp, 1._dp, 1._dp, ikx, iky, ikz, ikk, tmp)
+                end do
+                call dtime(values, time)
+                write(*, '("ikx=",i2," iky=",i2," ikz=",i2," ikk=",i2,"  =",es14.5,a,f6.2,a)') &
+                     ikx, iky, ikz, ikk, tmp, ' t= ', time / N * 1e3, ' ms/call'
+             end do
           end do
-          call dtime(values, time)
-          write(*, '("ikx=",i2," ikk=",i2,"  =",es14.5,a,f6.2,a)') &
-               ikx, ikk, tmp, ' t= ', time / N * 1e3, ' ms/call'
        end do
     end do
+
   end block
 
 end program test
