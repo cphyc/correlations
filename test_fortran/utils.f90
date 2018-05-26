@@ -6,7 +6,7 @@ module mod_utils
   implicit none
 
   private
-  real(dp), allocatable, dimension(:) :: k, Pk, k2Pk, tmp, dk
+  real(dp), allocatable, dimension(:) :: k, Pk, k2Pk, tmp, dk, kpart
   integer :: Nk
 
   public :: init, integrate, sigma
@@ -38,13 +38,14 @@ contains
 
     integer :: i
 
-    if (allocated(k)) deallocate(k, Pk, k2Pk, dk)
-    allocate(k(N), Pk(N), k2Pk(N), tmp(N), dk(N-1))
+    if (allocated(k)) deallocate(k, Pk, k2Pk, dk, kpart)
+    allocate(k(N), Pk(N), k2Pk(N), tmp(N), dk(N-1), kpart(N))
 
     k = k_
     Pk = Pk_
     k2Pk = k**2 * Pk
     Nk = size(k, 1)
+    kpart = 0
 
     do i = 1, Nk-1
        dk(i) = k(i+1) - k(i)
@@ -94,12 +95,21 @@ contains
 
     type(params2), target :: params
 
+    ! Detect when the result should be 0
+    if ( (mod(ikx, 2) == 1 .and. dx == 0) .or. &
+         (mod(iky, 2) == 1 .and. dy == 0) .or. &
+         (mod(ikz, 2) == 1 .and. dz == 0)) then
+       res = 0
+       return
+    end if
+
+    ! Precompute quantities
+    kpart = k2Pk * exp(-k**2 * (R1**2 + R2**2) / 2) * k**(ikx + iky + ikz - ikk)
+
     ! Fill parameters
     params%dx  = dx
     params%dy  = dy
     params%dz  = dz
-    params%R1  = R1
-    params%R2  = R2
     params%ikx = ikx
     params%iky = iky
     params%ikz = ikz
@@ -123,7 +133,6 @@ contains
     res = result
 
   end subroutine integrate
-
 
   !------------------------------------------------------------
   ! Integrand stuff
@@ -166,9 +175,10 @@ contains
 
     type(params2), pointer :: p
 
-    real(c_double) :: kx, ky, kz
     real(c_double) :: sincos, sinsin, cos, iipio2
     real(c_double) :: prev, cur, kk, kprev, res
+
+    ! real(c_double) :: kx, ky, kz, foo
     integer :: i
 
     ! Get data from C pointer
@@ -187,17 +197,12 @@ contains
     ! Integrate in k direction using trapezoidal rule
     do i = 1, Nk
        kk = k(i)
-       kx = kk * sincos
-       ky = kk * sinsin
-       kz = kk * p%cos_theta
 
-       cur = k2Pk(i) * cos((kx * p%dx + ky * p%dy + kz * p%dz) - iipio2) * &
-            exp(-kk**2*(p%R1**2 + p%R2**2)/2)
+       cur = kpart(i) * cos(kk * (sincos * p%dx + sinsin * p%dy + p%cos_theta * p%dz) - iipio2)
 
-       if (p%ikx /= 0) cur = cur * kx**p%ikx
-       if (p%iky /= 0) cur = cur * ky**p%iky
-       if (p%ikz /= 0) cur = cur * kz**p%ikz
-       if (p%ikk /= 0) cur = cur / kk**p%ikk
+       if (p%ikx /= 0) cur = cur * sincos**p%ikx
+       if (p%iky /= 0) cur = cur * sinsin**p%iky
+       if (p%ikz /= 0) cur = cur * p%cos_theta**p%ikz
 
        if (i > 0) &
             res = res + (kk - kprev) * (prev + cur) / 2
