@@ -1,0 +1,14 @@
+Metadata-Version: 1.1
+Name: correlations
+Version: 0.0.1
+Summary: Compute correlations functions for Gaussian Random Fields.
+Home-page: UNKNOWN
+Author: Corentin Cadiou
+Author-email: contact@cphyc.me
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Development status :: 1 - Alpha
+Classifier: License :: CC-By-SA2.0
+Classifier: Programming Language :: Python
+Classifier: Topic :: Gaussian Random Field
