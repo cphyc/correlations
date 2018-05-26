@@ -1,7 +1,7 @@
 MODNAME=utils
 SRC=utils.f90
 FC=gfortran
-F90FLAGS=-O3 -fPIC -march=native -Wall
+F90FLAGS=-O3 -fPIC -march=native -Wall -fopenmp
 
 CFLAGS=-I/home/ccc/.local/include/fgsl # $(shell pkg-config --cflags fgsl)
 LFLAGS= -L/home/ccc/.local/lib -lfgsl -lgsl -lgslcblas -lm #$(shell pkg-config --libs fgsl)

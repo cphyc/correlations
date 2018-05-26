@@ -24,7 +24,6 @@ module mod_utils
   end type params_t
 
   ! Workspace for GSL
-  type(fgsl_integration_workspace) :: wk1, wk2
   integer(fgsl_size_t), parameter :: nmax=1000
 
 contains
@@ -87,7 +86,12 @@ contains
     do i = 1, npt
        call sigma(iikx(i)+iiky(i)+iikz(i)-iikk(i), R(i), sigmas(i))
     end do
-    
+
+    covariance = 0
+
+    !$OMP PARALLEL DO default(shared)                                     &
+    !$OMP private(i1, i2, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res, s) &
+    !$OMP reduction(max:covariance) schedule(static, npt/8)
     do i1 = 1, npt
        sigma1 = sigmas(i1)
        do i2 = i1, npt
@@ -116,9 +120,10 @@ contains
           covariance(i2, i1) = res
        end do
     end do
-    
+    !$OMP END PARALLEL DO
+
   end subroutine compute_covariance
-  
+
   subroutine integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res)
     ! Evaluate the integral
     ! int_0^\infty dk
@@ -132,6 +137,7 @@ contains
     real(dp), intent(out) :: res
 
     ! GSL stuff
+    type(fgsl_integration_workspace) :: wk1
     real(fgsl_double) :: result, error
     integer(fgsl_int) :: status
     type(c_ptr) :: ptr
@@ -159,9 +165,7 @@ contains
     params%ii  = ikx + iky + ikz - ikk
     params%kpart = k2Pk * exp(-k**2 * (R1**2 + R2**2) / 2) * k**(ikx + iky + ikz - ikk)
 
-
     wk1 = fgsl_integration_workspace_alloc(nmax)
-    wk2 = fgsl_integration_workspace_alloc(nmax)
 
     ! Get C pointers
     ptr = c_loc(params)
@@ -171,7 +175,7 @@ contains
     status = fgsl_integration_qag(f1_obj, 0.0_fgsl_double, twopi, &
          epsrel, epsabs, nmax, FGSL_INTEG_GAUSS15, wk1, result, error)
     call fgsl_function_free(f1_obj)
-    call fgsl_integration_workspace_free(wk2)
+    ! call fgsl_integration_workspace_free(wk2)
     call fgsl_integration_workspace_free(wk1)
 
     res = result
@@ -189,11 +193,13 @@ contains
     type(params_t), pointer :: p
 
     ! GSL stuff
+    type(fgsl_integration_workspace) :: wk2
     type(fgsl_function) :: f2_obj
     real(fgsl_double) :: result, error
     integer(fgsl_int) :: status
 
     call c_f_pointer(params, p)
+    wk2 = fgsl_integration_workspace_alloc(nmax)
 
     ! Compute theta-specific values
     p%sin_phi = sin(phi)
@@ -206,6 +212,7 @@ contains
          epsrel, epsabs, nmax, FGSL_INTEG_GAUSS15, wk2, result, error)
 
     call fgsl_function_free(f2_obj)
+    call fgsl_integration_workspace_free(wk2)
 
     f1 = result
 

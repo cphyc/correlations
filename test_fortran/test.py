@@ -6,10 +6,10 @@ from time import time
 
 pi = np.pi
 
-k = np.geomspace(1e-4, 1e4, 3000)
-Pk = k**-2
+# k = np.geomspace(1e-4, 1e4, 3000)
+# Pk = k**-2
 
-u = Utils(k, Pk)
+# u = Utils(k, Pk)
 
 # print('%10s%14.5e' % ('sigma=', u.sigma(0, 8)))
 # (ikx, iky, ikz, ikk, dx, dy, dz, R1, R2) = 0, 0, 0, 0, 1, 0, 0, 1, 1
@@ -33,4 +33,10 @@ u = Utils(k, Pk)
 c = Correlator(quiet=True)
 c.add_point([0, 0, 0], ['hessian'], 1)
 c.add_point([1, 0, 0], ['hessian'], 1)
-print(c.cov)
+print(c.k.shape)
+before = time()
+c.cov
+after = time()
+for i in range(12):
+    print(('%10.5f'*12) % tuple(np.round(c.cov[i, :]*15, 5)))
+print('t= %6.2f ms' % ((after-before)))
