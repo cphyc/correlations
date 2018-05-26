@@ -220,7 +220,6 @@ cdef class Utils:
         _k = self.k
         _k2Pk = self.k2Pk
 
-
         sin_theta = sin(theta)
         cos_theta = cos(theta)
 

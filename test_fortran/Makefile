@@ -1,8 +1,10 @@
 MODNAME=utils
-SRC=utils.f90 quadpack.f90
+SRC=utils.f90
+CFLAGS=$(shell pkg-config --cflags fgsl)
+LFLAGS= $(shell pkg-config --libs fgsl)
 
 all: utils.pyf 
-	f2py -c $^ $(SRC) -m $(MODNAME)
+	f2py -c $^ $(SRC) -m $(MODNAME) $(CFLAGS) $(LFLAGS) --verbose
 
 
 %.pyf: %.f90
