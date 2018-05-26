@@ -6,7 +6,7 @@ module mod_utils
   implicit none
 
   private
-  real(dp), allocatable, dimension(:) :: k, Pk, k2Pk, tmp, dk, kpart
+  real(dp), allocatable, dimension(:) :: k, Pk, k2Pk, tmp, dk
   integer :: Nk
 
   public :: init, integrate, sigma
@@ -14,16 +14,12 @@ module mod_utils
   !------------------------------------------------------------
   ! Type definition to communicate between/from C
   !------------------------------------------------------------
-  ! type :: params1
-  !    real(dp) :: dx, dy, dz, R1, R2
-  !    integer :: ikx, iky, ikz, ikk, ii
-  ! end type params1
-
-  type :: params2
+  type :: params_t
      real(dp) :: dx, dy, dz, R1, R2
      integer :: ikx, iky, ikz, ikk, ii
      real(dp) :: sin_theta, cos_theta
-  end type params2
+     real(dp), allocatable :: kpart(:)
+  end type params_t
 
   ! Workspace for GSL
   type(fgsl_integration_workspace) :: wk1, wk2
@@ -38,14 +34,13 @@ contains
 
     integer :: i
 
-    if (allocated(k)) deallocate(k, Pk, k2Pk, dk, kpart)
-    allocate(k(N), Pk(N), k2Pk(N), tmp(N), dk(N-1), kpart(N))
+    if (allocated(k)) deallocate(k, Pk, k2Pk, dk)
+    allocate(k(N), Pk(N), k2Pk(N), tmp(N), dk(N-1))
 
     k = k_
     Pk = Pk_
     k2Pk = k**2 * Pk
     Nk = size(k, 1)
-    kpart = 0
 
     do i = 1, Nk-1
        dk(i) = k(i+1) - k(i)
@@ -93,7 +88,7 @@ contains
     type(c_ptr) :: ptr
     type(fgsl_function) :: f1_obj
 
-    type(params2), target :: params
+    type(params_t), target :: params
 
     ! Detect when the result should be 0
     if ( (mod(ikx, 2) == 1 .and. dx == 0) .or. &
@@ -103,10 +98,8 @@ contains
        return
     end if
 
-    ! Precompute quantities
-    kpart = k2Pk * exp(-k**2 * (R1**2 + R2**2) / 2) * k**(ikx + iky + ikz - ikk)
-
     ! Fill parameters
+    allocate(params%kpart(Nk))
     params%dx  = dx
     params%dy  = dy
     params%dz  = dz
@@ -115,6 +108,8 @@ contains
     params%ikz = ikz
     params%ikk = ikk
     params%ii  = ikx + iky + ikz - ikk
+    params%kpart = k2Pk * exp(-k**2 * (R1**2 + R2**2) / 2) * k**(ikx + iky + ikz - ikk)
+
 
     wk1 = fgsl_integration_workspace_alloc(nmax)
     wk2 = fgsl_integration_workspace_alloc(nmax)
@@ -142,7 +137,7 @@ contains
     type(c_ptr), value :: params
     real(c_double) :: f1
 
-    type(params2), pointer :: p
+    type(params_t), pointer :: p
 
     ! GSL stuff
     type(c_ptr) :: ptr
@@ -173,7 +168,7 @@ contains
     type(c_ptr), value :: params
     real(c_double) :: f2
 
-    type(params2), pointer :: p
+    type(params_t), pointer :: p
 
     real(c_double) :: sincos, sinsin, cos, iipio2
     real(c_double) :: prev, cur, kk, kprev, res
@@ -198,7 +193,7 @@ contains
     do i = 1, Nk
        kk = k(i)
 
-       cur = kpart(i) * cos(kk * (sincos * p%dx + sinsin * p%dy + p%cos_theta * p%dz) - iipio2)
+       cur = p%kpart(i) * cos(kk * (sincos * p%dx + sinsin * p%dy + p%cos_theta * p%dz) - iipio2)
 
        if (p%ikx /= 0) cur = cur * sincos**p%ikx
        if (p%iky /= 0) cur = cur * sinsin**p%iky

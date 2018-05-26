@@ -24,4 +24,6 @@ clean:
 	rm *.o *.mod -f
 
 test: $(OBJS) test.f90
-	$(FC) $(F90FLAGS) $(LFLAGS) $^ -o test
+	$(FC) $(F90FLAGS) $(LFLAGS) $(OBJS) test.f90 -o test
+	./test | tee test.output_f
+	# python ./test.py | tee test.output_py
