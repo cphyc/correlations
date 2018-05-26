@@ -77,7 +77,6 @@ cdef class Utils:
         self.Nk = len(k)
         self.k2Pk = k**2 * Pk
         self.k = k
-        print('There!')
 
     ################################################################################
     # Power spectrum handling

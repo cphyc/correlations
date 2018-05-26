@@ -59,7 +59,7 @@ def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
         0, pi,                      # theta bounds
         lambda theta: 0, lambda theta: 2*pi,  # phi bounds
         epsrel=1e-3, epsabs=1e-5,
-        args=(ikx, iky, ikz, ikk, *dX, R1, R2))[0]
+        args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2))[0]
 
     # # Integrate
     # res2 = nquad(
