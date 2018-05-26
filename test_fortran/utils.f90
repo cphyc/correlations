@@ -8,8 +8,9 @@ module mod_utils
   private
   real(dp), allocatable, dimension(:) :: k, Pk, k2Pk, tmp, dk
   integer :: Nk
+  real(fgsl_double) :: epsrel, epsabs
 
-  public :: init, integrate, sigma
+  public :: init, integrate, sigma, compute_covariance
 
   !------------------------------------------------------------
   ! Type definition to communicate between/from C
@@ -17,7 +18,8 @@ module mod_utils
   type :: params_t
      real(dp) :: dx, dy, dz, R1, R2
      integer :: ikx, iky, ikz, ikk, ii
-     real(dp) :: sin_theta, cos_theta
+     ! real(dp) :: sin_theta, cos_theta
+     real(dp) :: sin_phi, cos_phi
      real(dp), allocatable :: kpart(:)
   end type params_t
 
@@ -27,9 +29,10 @@ module mod_utils
 
 contains
 
-  subroutine init(k_, Pk_, N)
+  subroutine init(k_, Pk_, N, epsrel_, epsabs_)
     ! Allocate and store the power spectrum
     real(dp), dimension(N), intent(in) :: k_, Pk_
+    real(dp), intent(in) :: epsrel_, epsabs_
     integer, intent(in) :: N
 
     integer :: i
@@ -46,6 +49,8 @@ contains
        dk(i) = k(i+1) - k(i)
     end do
 
+    epsabs = epsabs_
+    epsrel = epsrel_
   end subroutine init
 
   subroutine sigma(ii, R, res)
@@ -56,13 +61,7 @@ contains
 
     real(dp), intent(out) :: res
 
-    real(dp) :: prev, cur, kk, Pkk, k2Pkk, kprev, integrand
-
-    integer :: i
-
-    integrand = 0
-    prev = 0
-    kprev = 0
+    real(dp) :: integrand
 
     tmp = k2Pk * k**(2*ii) * exp(-(k*R)**2)
     integrand = sum((tmp(1:) + tmp(:-1)) * dk) / 2
@@ -70,7 +69,57 @@ contains
     res = sqrt(integrand / twopi2)
   end subroutine sigma
 
-  subroutine integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res) bind(c)
+  subroutine compute_covariance(pos, R, iikx, iiky, iikz, iikk, signs, covariance, npt, ndim)
+    real(dp), intent(in), dimension(npt, ndim) :: pos
+    real(dp), intent(in), dimension(npt) :: R(npt)
+    integer, intent(in), dimension(npt)  :: iikx, iiky, iikz, iikk, signs
+    integer, intent(in) :: ndim, npt
+
+    real(dp), intent(out), dimension(npt, npt) :: covariance
+
+    integer :: i, i1, i2
+    real(dp) :: dx, dy, dz, R1, R2, res, s, sigma1, sigma2
+    integer :: ikx, iky, ikz, ikk
+
+    real(dp), dimension(npt) :: sigmas
+
+    ! Precompute sigma values
+    do i = 1, npt
+       call sigma(iikx(i)+iiky(i)+iikz(i)-iikk(i), R(i), sigmas(i))
+    end do
+    
+    do i1 = 1, npt
+       sigma1 = sigmas(i1)
+       do i2 = i1, npt
+          sigma2 = sigmas(i2)
+
+          ikx = iikx(i1) + iikx(i2)
+          iky = iiky(i1) + iiky(i2)
+          ikz = iikz(i1) + iikz(i2)
+          ikk = iikk(i1) + iikk(i2)
+
+          R1 = R(i1)
+          R2 = R(i2)
+
+          ! Compute sign of output
+          s = (-1)**(iikx(i2)+iiky(i2)+iikz(i2)-iikk(i2)) * signs(i1) * signs(i2)
+          dx = pos(i2, 1) - pos(i1, 1)
+          dy = pos(i2, 2) - pos(i1, 2)
+          dz = pos(i2, 3) - pos(i1, 3)
+
+          ! Perform integration
+          call integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res)
+
+          ! Scale result by corresponding sigma + sign
+          res = s * res / sigma1 / sigma2
+          covariance(i1, i2) = res
+          covariance(i2, i1) = res
+       end do
+    end do
+    
+  end subroutine compute_covariance
+  
+  subroutine integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res)
     ! Evaluate the integral
     ! int_0^\infty dk
     !   int_0^pi dtheta
@@ -119,8 +168,8 @@ contains
     f1_obj = fgsl_function_init(f1, ptr)
 
     ! Integrate over theta
-    status = fgsl_integration_qag(f1_obj, 0.0_fgsl_double, pi * 1.0_fgsl_double, &
-         1.0e-3_fgsl_double, 1.0e-5_fgsl_double, nmax, FGSL_INTEG_GAUSS15, wk1, result, error)
+    status = fgsl_integration_qag(f1_obj, 0.0_fgsl_double, twopi, &
+         epsrel, epsabs, nmax, FGSL_INTEG_GAUSS15, wk1, result, error)
     call fgsl_function_free(f1_obj)
     call fgsl_integration_workspace_free(wk2)
     call fgsl_integration_workspace_free(wk1)
@@ -132,15 +181,14 @@ contains
   !------------------------------------------------------------
   ! Integrand stuff
   !------------------------------------------------------------
-  function f1(theta, params) bind(c)
-    real(c_double), value :: theta
+  function f1(phi, params) bind(c)
+    real(c_double), value :: phi
     type(c_ptr), value :: params
     real(c_double) :: f1
 
     type(params_t), pointer :: p
 
     ! GSL stuff
-    type(c_ptr) :: ptr
     type(fgsl_function) :: f2_obj
     real(fgsl_double) :: result, error
     integer(fgsl_int) :: status
@@ -148,14 +196,14 @@ contains
     call c_f_pointer(params, p)
 
     ! Compute theta-specific values
-    p%sin_theta = sin(theta)
-    p%cos_theta = cos(theta)
+    p%sin_phi = sin(phi)
+    p%cos_phi = cos(phi)
 
     f2_obj = fgsl_function_init(f2, params)
 
     ! Integrate over phi
-    status = fgsl_integration_qag(f2_obj, 0.0_fgsl_double, twopi * 1.0_fgsl_double, &
-         1.0e-3_fgsl_double, 1.0e-5_fgsl_double, nmax, FGSL_INTEG_GAUSS15, wk2, result, error)
+    status = fgsl_integration_qag(f2_obj, 0.0_fgsl_double, pi, &
+         epsrel, epsabs, nmax, FGSL_INTEG_GAUSS15, wk2, result, error)
 
     call fgsl_function_free(f2_obj)
 
@@ -163,14 +211,14 @@ contains
 
   end function f1
 
-  function f2(phi, params) bind(c)
-    real(c_double), value :: phi
+  function f2(theta, params) bind(c)
+    real(c_double), value :: theta
     type(c_ptr), value :: params
     real(c_double) :: f2
 
     type(params_t), pointer :: p
 
-    real(c_double) :: sincos, sinsin, cos, iipio2
+    real(c_double) :: sincos, sinsin, cos_theta, sin_theta, iipio2
     real(c_double) :: prev, cur, kk, kprev, res
 
     ! real(c_double) :: kx, ky, kz, foo
@@ -179,9 +227,11 @@ contains
     ! Get data from C pointer
     call c_f_pointer(params, p)
 
+    sin_theta = sin(theta)
+    cos_theta = cos(theta)
     ! Precompute some stuff
-    sincos = p%sin_theta * cos(phi)
-    sinsin = p%sin_theta * sin(phi)
+    sincos = sin_theta * p%cos_phi
+    sinsin = sin_theta * p%sin_phi
     iipio2 = p%ii * pi / 2
 
     ! Initialize variables
@@ -193,11 +243,11 @@ contains
     do i = 1, Nk
        kk = k(i)
 
-       cur = p%kpart(i) * cos(kk * (sincos * p%dx + sinsin * p%dy + p%cos_theta * p%dz) - iipio2)
+       cur = p%kpart(i) * cos(kk * (sincos * p%dx + sinsin * p%dy + cos_theta * p%dz) - iipio2)
 
        if (p%ikx /= 0) cur = cur * sincos**p%ikx
        if (p%iky /= 0) cur = cur * sinsin**p%iky
-       if (p%ikz /= 0) cur = cur * p%cos_theta**p%ikz
+       if (p%ikz /= 0) cur = cur * cos_theta**p%ikz
 
        if (i > 0) &
             res = res + (kk - kprev) * (prev + cur) / 2
@@ -206,7 +256,7 @@ contains
        prev = cur
     end do
 
-    f2 = res * p%sin_theta / eightpi3
+    f2 = res * sin_theta / eightpi3
   end function f2
 
 end module mod_utils

@@ -5,6 +5,7 @@ program test
 
   integer, parameter :: Nk = 3000
   real(dp) :: k(Nk), Pk(Nk), kmin, kmax, tmp
+  real(dp) :: epsrel = 1d-7, epsabs = 1d-10
 
   integer :: i, N
 
@@ -18,7 +19,7 @@ program test
      Pk(i) = k(i)**(-2)
   end do
 
-  call init(k, Pk, Nk)
+  call init(k, Pk, Nk, epsrel, epsabs)
 
   ! Test sigma
   N = 5000
@@ -51,5 +52,34 @@ program test
     end do
 
   end block
+
+  ! Test computation of covariance
+  block
+    integer, parameter :: npt = 12
+    real(dp), dimension(npt, 3) :: pos
+    real(dp), dimension(npt) :: R
+    integer, dimension(npt) :: iikx, iiky, iikz, iikk, signs
+    real(dp), dimension(npt, npt) :: covariance
+
+    integer :: i
+
+    pos(:,  :) = 0
+    pos(6:, 1) = 1
+
+    R(:) = 1
+    iikx(:) = [2, 0, 0, 1, 1, 0, 2, 0, 0, 1, 1, 0]
+    iiky(:) = [0, 2, 0, 1, 0, 1, 0, 2, 0, 1, 0, 1]
+    iikz(:) = [0, 0, 2, 0, 1, 1, 0, 0, 2, 0, 1, 1]
+    iikk(:) = 0
+    signs(:)= 1
+    
+    call compute_covariance(pos, R, iikx, iiky, iikz, iikk, signs, covariance, npt, 3)
+
+    do i = 1, npt
+       write (*, '(*(f10.5))') covariance(i, :)
+    end do
+    
+  end block
+  
 
 end program test

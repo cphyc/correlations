@@ -1,10 +1,10 @@
 MODNAME=utils
 SRC=utils.f90
 FC=gfortran
-F90FLAGS=-O3 -fPIC -march=native
+F90FLAGS=-O3 -fPIC -march=native -Wall
 
-CFLAGS=$(shell pkg-config --cflags fgsl)
-LFLAGS= $(shell pkg-config --libs fgsl)
+CFLAGS=-I/home/ccc/.local/include/fgsl # $(shell pkg-config --cflags fgsl)
+LFLAGS= -L/home/ccc/.local/lib -lfgsl -lgsl -lgslcblas -lm #$(shell pkg-config --libs fgsl)
 
 F2PY_FUNCTIONS=init integrate sigma
 OBJS=constants.o utils.o
