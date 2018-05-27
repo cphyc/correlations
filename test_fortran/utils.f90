@@ -62,7 +62,7 @@ contains
 
     real(dp) :: integrand
 
-    tmp = k2Pk * k**(2*ii) * exp(-(k*R)**2)
+    tmp = Pk * k**(2+2*ii) * exp(-min((k*R)**2, 250._dp))
     integrand = sum((tmp(2:Nk) + tmp(1:Nk-1)) * dk) / 2
 
     res = sqrt(integrand / twopi2)
@@ -89,8 +89,8 @@ contains
 
     covariance = 0
 
-    !$OMP PARALLEL DO default(shared)                                     &
-    !$OMP private(i1, i2, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res, s) &
+    !$OMP PARALLEL DO default(shared) firstprivate(sigmas)                                &
+    !$OMP private(i1, i2, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res, s, sigma1, sigma2) &
     !$OMP reduction(+:covariance) schedule(static, npt/8)
     do i1 = 1, npt
        sigma1 = sigmas(i1)
@@ -111,7 +111,6 @@ contains
           dy = y(i2) - y(i1)
           dz = z(i2) - z(i1)
 
-          print*, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk
           ! Perform integration
           call integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res)
 
@@ -119,6 +118,7 @@ contains
           res = s * res / sigma1 / sigma2
           covariance(i1, i2) = res
           covariance(i2, i1) = res
+
        end do
     end do
     !$OMP END PARALLEL DO
@@ -164,7 +164,9 @@ contains
     params%ikz = ikz
     params%ikk = ikk
     params%ii  = ikx + iky + ikz - ikk
-    params%kpart = k2Pk * exp(-k**2 * (R1**2 + R2**2) / 2) * k**(ikx + iky + ikz - ikk)
+
+    ! Note: e^{-250} < 1e^-100
+    params%kpart = Pk * exp(-min(k**2 * (R1**2 + R2**2) / 2, 250._dp)) * k**(2 + ikx + iky + ikz - ikk)
 
     wk1 = fgsl_integration_workspace_alloc(nmax)
 
@@ -229,7 +231,6 @@ contains
     real(c_double) :: sincos, sinsin, cos_theta, sin_theta, iipio2
     real(c_double) :: prev, cur, kk, res
 
-    ! real(c_double) :: kx, ky, kz, foo
     integer :: i
 
     ! Get data from C pointer
@@ -237,6 +238,7 @@ contains
 
     sin_theta = sin(theta)
     cos_theta = cos(theta)
+
     ! Precompute some stuff
     sincos = sin_theta * p%cos_phi
     sinsin = sin_theta * p%sin_phi

@@ -30,13 +30,19 @@ pi = np.pi
 #                       (ikx, iky, ikz, ikk, res, (now-before)*1000))
 
 
+# c = Correlator(quiet=True)
+# c.add_point([0, 0, 0], ['hessian'], 1)
+# c.add_point([1, 0, 0], ['hessian'], 1)
+# print(c.k.shape)
+# before = time()
+# c.cov
+# after = time()
+# for i in range(12):
+#     print(('%10.5f'*12) % tuple(np.round(c.cov[i, :]*15, 5)))
+# print('t= %6.2f ms' % ((after-before)))
+
 c = Correlator(quiet=True)
-c.add_point([0, 0, 0], ['hessian'], 1)
-c.add_point([1, 0, 0], ['hessian'], 1)
-print(c.k.shape)
-before = time()
-c.cov
-after = time()
-for i in range(12):
-    print(('%10.5f'*12) % tuple(np.round(c.cov[i, :]*15, 5)))
-print('t= %6.2f ms' % ((after-before)))
+c.add_point([0, 0, 0],
+            ['potential', 'a', 'tide', 'grad_delta', 'hessian'],
+            1)
+print(c.cov)
