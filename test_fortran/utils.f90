@@ -28,11 +28,11 @@ module mod_utils
 
 contains
 
-  subroutine init(k_, Pk_, N, epsrel_, epsabs_)
+  subroutine init(k_, Pk_, N, epsrel_, epsabs_) bind(c, name='init')
     ! Allocate and store the power spectrum
     real(dp), dimension(N), intent(in) :: k_, Pk_
-    real(dp), intent(in) :: epsrel_, epsabs_
-    integer, intent(in) :: N
+    real(dp), intent(in), value :: epsrel_, epsabs_
+    integer(c_int), intent(in), value :: N
 
     integer :: i
 
@@ -52,11 +52,11 @@ contains
     epsrel = epsrel_
   end subroutine init
 
-  subroutine sigma(ii, R, res)
+  subroutine sigma(ii, R, res) bind(c)
     ! Evaluate the variance of the i-th derivative (or antiderivative
     ! if i < 0) of the field, smoothed at scale R
-    integer, intent(in) :: ii
-    real(dp), intent(in) :: R
+    integer(c_int), intent(in), value :: ii
+    real(dp), intent(in), value :: R
 
     real(dp), intent(out) :: res
 
@@ -68,11 +68,11 @@ contains
     res = sqrt(integrand / twopi2)
   end subroutine sigma
 
-  subroutine compute_covariance(pos, R, iikx, iiky, iikz, iikk, signs, covariance, npt, ndim)
-    real(dp), intent(in), dimension(npt, ndim) :: pos
+  subroutine compute_covariance(x, y, z, R, iikx, iiky, iikz, iikk, signs, covariance, npt) bind(c)
+    real(dp), intent(in), dimension(npt) :: x, y, z
     real(dp), intent(in), dimension(npt) :: R(npt)
-    integer, intent(in), dimension(npt)  :: iikx, iiky, iikz, iikk, signs
-    integer, intent(in) :: ndim, npt
+    integer(c_int), intent(in), dimension(npt) :: iikx, iiky, iikz, iikk, signs
+    integer(c_int), intent(in), value :: npt
 
     real(dp), intent(out), dimension(npt, npt) :: covariance
 
@@ -91,7 +91,7 @@ contains
 
     !$OMP PARALLEL DO default(shared)                                     &
     !$OMP private(i1, i2, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res, s) &
-    !$OMP reduction(max:covariance) schedule(static, npt/8)
+    !$OMP reduction(+:covariance) schedule(static, npt/8)
     do i1 = 1, npt
        sigma1 = sigmas(i1)
        do i2 = i1, npt
@@ -107,10 +107,11 @@ contains
 
           ! Compute sign of output
           s = (-1)**(iikx(i2)+iiky(i2)+iikz(i2)-iikk(i2)) * signs(i1) * signs(i2)
-          dx = pos(i2, 1) - pos(i1, 1)
-          dy = pos(i2, 2) - pos(i1, 2)
-          dz = pos(i2, 3) - pos(i1, 3)
+          dx = x(i2) - x(i1)
+          dy = y(i2) - y(i1)
+          dz = z(i2) - z(i1)
 
+          print*, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk
           ! Perform integration
           call integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res)
 
@@ -124,7 +125,7 @@ contains
 
   end subroutine compute_covariance
 
-  subroutine integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res)
+  subroutine integrate(dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res) bind(c)
     ! Evaluate the integral
     ! int_0^\infty dk
     !   int_0^pi dtheta
@@ -132,7 +133,7 @@ contains
     !       k^2 Pk W(kR1) W(kR2) exp(-ik.r) kx^ikx ky^iky kz^ikz / k*ikk
 
     real(dp), intent(in) :: dx, dy, dz, R1, R2
-    integer, intent(in) :: ikx, iky, ikz, ikk
+    integer(c_int), intent(in) :: ikx, iky, ikz, ikk
 
     real(dp), intent(out) :: res
 

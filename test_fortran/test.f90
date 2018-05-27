@@ -76,15 +76,17 @@ program test
   ! Test computation of covariance
   block
     integer, parameter :: npt = 12
-    real(dp), dimension(npt, 3) :: pos
+    real(dp), dimension(npt) :: x, y, z
     real(dp), dimension(npt) :: R
     integer, dimension(npt) :: iikx, iiky, iikz, iikk, signs
     real(dp), dimension(npt, npt) :: covariance
 
     integer :: i
 
-    pos(:,  :) = 0
-    pos(6:, 1) = 1
+    x = 0
+    x(6:) = 1
+    y = 0
+    z = 0
 
     R(:) = 1
     iikx(:) = [2, 0, 0, 1, 1, 0, 2, 0, 0, 1, 1, 0]
@@ -94,7 +96,7 @@ program test
     signs(:)= 1
 
     call dtime(values, time)
-    call compute_covariance(pos, R, iikx, iiky, iikz, iikk, signs, covariance, npt, 3)
+    call compute_covariance(x, y, z, R, iikx, iiky, iikz, iikk, signs, covariance, npt)
     call dtime(values, time)
 
     do i = 1, npt

@@ -10,6 +10,7 @@ from multiprocessing import Pool, cpu_count
 import os
 
 from .utils import Utils
+from .fortran_utils import compute_covariance
 
 
 this_dir, this_filename = os.path.split(__file__)
@@ -338,6 +339,24 @@ class Correlator(object):
         return self._covariance
 
     def compute_covariance(self):
+        # Create arrays of factors of k and degree of sigma
+        kxfactor = self.kxfactor
+        kyfactor = self.kyfactor
+        kzfactor = self.kzfactor
+        kfactor = self.kfactor
+        RR = self.smoothing_scales
+        signs = np.asarray(self.signs)
+
+        # Create an array with all the positions of shape (Ndim, 3)
+        X = self.positions
+
+        cov = compute_covariance(
+            self.k, self.Pk, X, RR, kxfactor, kyfactor, kzfactor, kfactor,
+            signs)
+        self._covariance_valid = True
+        return cov
+
+    def compute_covariance_py(self):
         '''
         Computes the unconstrained covariance matrix.
         '''
