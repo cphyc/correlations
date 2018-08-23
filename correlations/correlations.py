@@ -1,11 +1,12 @@
 import numpy as np
 from numpy import sqrt, pi, cos, sin
-from scipy.integrate import dblquad, nquad
+from scipy.integrate import dblquad
 from itertools import combinations_with_replacement
 from tqdm.autonotebook import tqdm
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from functools import wraps, partial
+from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 import os
 
@@ -146,8 +147,41 @@ def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
     return integral
 
 
+class CovarianceAccessor(object):
+    def __init__(self, correlator):
+        self.parent = correlator
+
+    @property
+    def cov(self):
+        return self.parent.cov_c
+
+    @property
+    def mean(self):
+        return self.parent.mean_c
+
+    def __getitem__(self, key):
+        mapping = self.parent._mapping
+        ret = np.array(
+            [mapping[v][key] for v in mapping
+             if key in mapping[v]])
+
+        # Now recompute indexes
+        constrains = self.parent.constrains
+        old_to_new = np.zeros_like(constrains) * np.nan
+
+        j = 0
+        for i, c in enumerate(constrains):
+            if np.isnan(c):
+                old_to_new[i] = j
+                j += 1
+
+        ret = old_to_new[ret]
+        return ret
+
+
 class Correlator(object):
-    '''A class to compute correlation matrix at arbitrary points using a real power spectrum.
+    '''A class to compute correlation matrix at arbitrary points using
+    a real power spectrum.
 
     Params
     ------
@@ -155,6 +189,26 @@ class Correlator(object):
        Use this number of processor. If None, use only one.
     quiet : boolean, optional
        Turn off notification
+
+    To add points, use the `add_point` method.
+    To access the mean and covariance use `.mean` and `.cov`
+    To access the constrained mean and covariance, use `.c.mean` and `.c.cov`.
+
+    You can also access the offsets to tweak e.g. the constrains using
+    array syntax. For example
+        >> c = Correlator()
+        .. c.add_point([ 0, 0, 0], ['delta'], 1, name="A")
+        .. c.add_point([10, 0, 0], ['delta'], 1, name="B")
+
+        >> c["A"]
+        {'delta': array([0])}
+
+        >> c["delta"]
+        array([[0],
+               [1]])
+
+    You can also access the offsets within the correlated data using
+    the same format e.g. `c.c["A"]`.
     '''
     def __init__(self, nproc=None, quiet=False):
         self.kxfactor = []
@@ -167,6 +221,8 @@ class Correlator(object):
         self.labels = []
         self.labels_c = []
         self.signs = []
+        self._mapping = defaultdict(dict)
+        self.c = CovarianceAccessor(self)
 
         self.Npts = 0
         self.k = k
@@ -236,16 +292,24 @@ class Correlator(object):
         new_pos = []
         labels = []
         sign = []
+        name = name if name else str(self.Npts)
+
+        i0 = len(self.constrains)
 
         pos = np.asarray(pos)
         if pos.ndim > 1:
             raise Exception('pos argument should have ndim=1')
 
+        # Helper function: add the contrain, smoothing scale and
+        # position to the relevant arrays
         def add(e, n):
+            istart = len(cons) + i0
             if e in constrains:
                 cons.extend(constrains[e])
             else:
                 cons.extend([np.nan] * n)
+            iend = len(cons) + i0
+            self._mapping[name][e] = np.arange(istart, iend)
             smoothing_scales.extend([R] * n)
             new_pos.extend([pos] * n)
 
@@ -318,8 +382,7 @@ class Correlator(object):
         self.signs.extend(sign)
 
         # Format the labels
-        self.labels.extend((l % {'name': (name if name is not None else
-                                          str(self.Npts))}
+        self.labels.extend((l % {'name': name}
                             for l in labels))
 
         Nlabel = len(self.labels)
@@ -328,6 +391,29 @@ class Correlator(object):
                          if np.isnan(self.constrains[i])]
 
         return self.Npts-1
+
+    def get_offset_by_name(self, name):
+        return self._mapping[name]
+
+    def get_offset_by_value(self, key):
+        ret = np.array(
+            [self._mapping[v][key] for v in self._mapping
+             if key in self._mapping[v]])
+
+        return ret
+
+    def __getitem__(self, key):
+        if type(key) == str:
+            if key in self._mapping:
+                return self.get_offset_by_name(key)
+            else:
+                return self.get_offset_by_value(key)
+        else:
+            raise Exception('Did not understand.')
+
+    @property
+    def points(self):
+        return list(self._mapping.keys())
 
     @property
     def cov(self):
@@ -422,7 +508,7 @@ class Correlator(object):
     @property
     def cov_c(self):
         '''
-        The (constrained) covariance matrix
+        The (constrained) covariance matrix.
         '''
         self._mean_c, self._cov_c = self.constrain()
 
