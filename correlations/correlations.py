@@ -2,15 +2,16 @@ import numpy as np
 from numpy import sqrt, pi, cos, sin
 from scipy.integrate import dblquad, nquad
 from itertools import combinations_with_replacement
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from functools import lru_cache, partial, wraps
+from functools import wraps, partial
 from multiprocessing import Pool, cpu_count
 import os
 
 from .utils import Utils
 from .fortran_utils import compute_covariance
+from .funcs import LRUCache
 
 
 this_dir, this_filename = os.path.split(__file__)
@@ -31,23 +32,14 @@ twopi2 = 2 * np.pi**2
 dk = np.diff(k)
 
 
-# def sigma(i, R):
-#     # Note: below we use exp(-(kR)**2) == exp(-(kR)**2/2) **2
-#     integrand = k**(2*i+2) * Pk * np.exp(-(k * R)**2) / twopi2
-#     ret = sqrt(np.sum((integrand[1:] + integrand[:-1]) * dk) / 2)
-
-#     return ret
-
-
 def odd(i):
     return (i % 2) == 1
 
 
-@lru_cache(maxsize=None)
+@LRUCache()
 def _correlation(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2,
                  sign1, sign2,
                  nsigma1, nsigma2):
-    dX = np.array([dx, dy, dz])
     # Compute sigmas
 
     s1s2 = (
@@ -155,6 +147,15 @@ def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
 
 
 class Correlator(object):
+    '''A class to compute correlation matrix at arbitrary points using a real power spectrum.
+
+    Params
+    ------
+    nproc : int, optional
+       Use this number of processor. If None, use only one.
+    quiet : boolean, optional
+       Turn off notification
+    '''
     def __init__(self, nproc=None, quiet=False):
         self.kxfactor = []
         self.kyfactor = []
@@ -174,6 +175,7 @@ class Correlator(object):
         self.nproc = nproc if nproc else 1
 
         self._covariance_valid = False
+        self.quiet = quiet
         if quiet:
             def pbar(iterable, *args, **kwa):
                 return iterable
@@ -335,10 +337,13 @@ class Correlator(object):
         if self._covariance_valid:
             return self._covariance
 
-        self.compute_covariance()
+        self.compute_covariance_py()
         return self._covariance
 
     def compute_covariance(self):
+        return self.compute_covariance_py()
+
+    def compute_covariance_f90(self):
         # Create arrays of factors of k and degree of sigma
         kxfactor = self.kxfactor
         kyfactor = self.kyfactor
@@ -353,6 +358,7 @@ class Correlator(object):
         cov = compute_covariance(
             self.k, self.Pk, X, RR, kxfactor, kyfactor, kzfactor, kfactor,
             signs)
+        self._covariance = cov
         self._covariance_valid = True
         return cov
 
@@ -389,9 +395,9 @@ class Correlator(object):
 
         if self.nproc > 1:
             with Pool(self.nproc) as p:
-                if self.nproc:
+                if self.nproc and not self.quiet:
                     print('Running with %s processes.' % self.nproc)
-                else:
+                elif not self.quiet:
                     print('Running with %s processes.' % cpu_count())
 
                 for i1, i2, value in self._pbar(
@@ -471,7 +477,6 @@ class Correlator(object):
         '''Plot the constrained matrix.'''
         self._plot_cov(self.cov_c, self.labels_c, *args, **kwa)
 
-
     def _fmt_element(self, element, size=10):
         if np.isclose(element, 0):
             return ' '*size
@@ -538,6 +543,7 @@ class Correlator(object):
             table += line
         # return table
         return display(Markdown(table))
+
 
 def constrain(mean, cov, values):
     '''Return the constrained mean and covariance given the values.

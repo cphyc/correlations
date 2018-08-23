@@ -263,29 +263,29 @@ cdef class Utils:
 
         return intgd / eightpi3
 
-    # def compute_correlation(int ikx, int iky, int ikz, int ikk,
-    #                         double dx, double dy, double dz, double R1, double R2,
-    #                         int sign1, int sign2, int nsigma1, int nsigma2,
-    #                         str Pkchoice
-    #     ):
-    #     cdef double s1s2
-    #     cdef double kmin = self.k[0], kmax = self.k[self.Nk-1]
+    def compute_correlation(self, int ikx, int iky, int ikz, int ikk,
+                            double dx, double dy, double dz, double R1, double R2,
+                            int nsigma1, int nsigma2, int sign1=1, int sign2=1,
+                            str Pkchoice='Lambda-CDM'
+        ):
+        cdef double s1s2
+        cdef double kmin = self.k[0], kmax = self.k[self.Nk-1]
 
-    #     s1s2 = sign1 * sigma_G(nsigma1, R1) * sign2 * sigma_G(nsigma2, R2)
+        s1s2 = sign1 * self.sigma(nsigma1, R1) * sign2 * self.sigma(nsigma2, R2)
 
-    #     if Pkchoice == 'power-law':
-    #         res, _ = tplquad(integrand,
-    #                          0, pi,                                   # boundaries on theta
-    #                          lambda theta: 0, lambda theta: twopi,              # boundaries on phi
-    #                          lambda theta, phi: kmin, lambda theta, phi: kmax,  # boundaries on k
-    #                          epsrel=1e-6, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
-    #         )
-    #     elif Pkchoice == 'Lambda-CDM':
-    #         res, _ = dblquad(integrand_lambdaCDM,
-    #                          0, pi, lambda theta: 0, lambda theta: twopi,
-    #                          epsrel=1e-6, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
-    #         )
-    #     return res / s1s2
+        if Pkchoice == 'power-law':
+            res, _ = tplquad(self.integrand,
+                             0, pi,                                   # boundaries on theta
+                             lambda theta: 0, lambda theta: twopi,              # boundaries on phi
+                             lambda theta, phi: kmin, lambda theta, phi: kmax,  # boundaries on k
+                             epsrel=1e-6, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
+            )
+        elif Pkchoice == 'Lambda-CDM':
+            res, _ = dblquad(self.integrand_lambdaCDM,
+                             0, pi, lambda theta: 0, lambda theta: twopi,
+                             epsrel=1e-6, args=(ikx, iky, ikz, ikk, dx, dy, dz, R1, R2)
+            )
+        return res / s1s2
 
 
     # @cython.boundscheck(False)

@@ -7,7 +7,7 @@ CFLAGS=-I/home/ccc/.local/include/fgsl # $(shell pkg-config --cflags fgsl)
 LFLAGS= -L/home/ccc/.local/lib -lfgsl -lgsl -lgslcblas -lm #$(shell pkg-config --libs fgsl)
 
 F2PY_FUNCTIONS=init integrate sigma
-OBJS=constants.o utils.o
+OBJS=hashtable.o constants.o utils.o
 
 TARGET=utils.so
 

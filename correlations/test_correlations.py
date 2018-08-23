@@ -1,6 +1,6 @@
 from correlations.correlations import Correlator, sigma
 import numpy as np
-
+from pprint import pprint
 
 def is_def_positive(A):
     eigvals = np.linalg.eigvalsh(A)
@@ -40,7 +40,7 @@ def test_nu():
     '''nu-nu correlations'''
     c = Correlator(quiet=True)
 
-    for x in np.linspace(0, 1, 10):
+    for x in np.linspace(0, 10, 10):
         c.add_point([x, 0, 0], ['delta'], 1)
 
     # Check unit variance on diagonal
@@ -51,7 +51,7 @@ def test_nu():
 
 
 def test_zerolag():
-    '''0 lag correlation matrix'''
+    '''0 lag covariance'''
     c = Correlator(quiet=True)
     c.add_point([0, 0, 0],
                 ['potential', 'a', 'tide', 'grad_delta', 'hessian'],
@@ -100,6 +100,8 @@ def test_zerolag():
     expected = np.triu(expected)
     expected = (expected + expected.T) - np.diag(np.diag(expected))
 
+    pprint(np.round(c.cov, 3)[:10, :10])
+    pprint(np.round(expected, 3)[:10, :10])
     print((c.cov - expected) / expected)
     # print(np.round(c.cov*15, 5))
     # print(np.round(expected*15, 5))
@@ -110,7 +112,7 @@ def test_zerolag():
 
 
 def test_gradgrad():
-    '''Gradient gradient correlations'''
+    '''grad-grad correlations'''
     c = Correlator(quiet=True)
     c.add_point([0, 0, 0], ['grad_delta'], 1)
     c.add_point([1, 0, 0], ['grad_delta'], 1)

@@ -3,6 +3,7 @@ module mod_utils
   use, intrinsic :: iso_c_binding
 
   use mod_constants
+  use hashtbl
   implicit none
 
   private
@@ -26,6 +27,11 @@ module mod_utils
   ! Workspace for GSL
   integer(fgsl_size_t), parameter :: nmax=1000
 
+  ! Hashtable to prevent recomputation of same things multiple times
+  type(hash_tbl_sll) :: table
+  integer, parameter :: tbl_length = 100
+  logical :: table_allocated = .false.
+
 contains
 
   subroutine init(k_, Pk_, N, epsrel_, epsabs_) bind(c, name='init')
@@ -36,8 +42,12 @@ contains
 
     integer :: i
 
-    if (allocated(k)) deallocate(k, Pk, k2Pk, dk)
+    if (table_allocated) call table%free
+    if (allocated(k)) deallocate(k, Pk, k2Pk, tmp, dk)
     allocate(k(N), Pk(N), k2Pk(N), tmp(N), dk(N-1))
+
+    call table%init(tbl_length)
+    table_allocated = .true.
 
     k = k_
     Pk = Pk_
@@ -89,9 +99,9 @@ contains
 
     covariance = 0
 
-    !$OMP PARALLEL DO default(shared) firstprivate(sigmas)                                &
-    !$OMP private(i1, i2, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res, s, sigma1, sigma2) &
-    !$OMP reduction(+:covariance) schedule(static, npt/8)
+    ! $OMP PARALLEL DO default(shared) firstprivate(sigmas)                                &
+    ! $OMP private(i1, i2, dx, dy, dz, R1, R2, ikx, iky, ikz, ikk, res, s, sigma1, sigma2) &
+    ! $OMP reduction(+:covariance) schedule(static, npt/8)
     do i1 = 1, npt
        sigma1 = sigmas(i1)
        do i2 = i1, npt
@@ -121,7 +131,7 @@ contains
 
        end do
     end do
-    !$OMP END PARALLEL DO
+    ! $OMP END PARALLEL DO
 
   end subroutine compute_covariance
 
@@ -131,11 +141,13 @@ contains
     !   int_0^pi dtheta
     !     int_0^2pi dphi
     !       k^2 Pk W(kR1) W(kR2) exp(-ik.r) kx^ikx ky^iky kz^ikz / k*ikk
-
     real(dp), intent(in) :: dx, dy, dz, R1, R2
     integer(c_int), intent(in) :: ikx, iky, ikz, ikk
 
     real(dp), intent(out) :: res
+
+    ! Hashtable stuff
+    character(len=20) :: key
 
     ! GSL stuff
     type(fgsl_integration_workspace) :: wk1
@@ -146,6 +158,8 @@ contains
 
     type(params_t), target :: params
 
+    ! Lookup in the table
+    write(key, '')
     ! Detect when the result should be 0
     if ( (mod(ikx, 2) == 1 .and. dx == 0) .or. &
          (mod(iky, 2) == 1 .and. dy == 0) .or. &

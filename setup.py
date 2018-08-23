@@ -47,6 +47,7 @@ setup(
     ]},
     install_requires=[
         'numpy',
+        'mezmorize>=0.25.0',
     ],
     include_package_data=True,
     ext_modules=cythonize(cython_extensions)
