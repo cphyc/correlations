@@ -176,7 +176,14 @@ class CovarianceAccessor(object):
                 j += 1
 
         ret = old_to_new[ret]
-        return ret
+
+        # Filter out bad lines
+        mask = ~np.all(np.isnan(ret), axis=1)
+        ret = ret[mask]
+
+        # Cast to integer
+        Nbad = len(mapping)
+        return np.where(np.isnan(ret), Nbad, ret.astype(np.int64))
 
 
 class Correlator(object):
@@ -208,7 +215,8 @@ class Correlator(object):
                [1]])
 
     You can also access the offsets within the correlated data using
-    the same format e.g. `c.c["A"]`.
+    the same format e.g. `c.c["A"]`. Note that invalid positions will
+    be written as -1.
     '''
     def __init__(self, nproc=None, quiet=False):
         self.kxfactor = []
@@ -216,7 +224,7 @@ class Correlator(object):
         self.kzfactor = []
         self.kfactor = []
         self.positions = np.zeros((0, 3))
-        self.constrains = []
+        self.constrains = np.array([])
         self.smoothing_scales = []
         self.labels = []
         self.labels_c = []
@@ -377,7 +385,7 @@ class Correlator(object):
         self.kyfactor.extend(ky)
         self.kzfactor.extend(kz)
         self.kfactor.extend(kk)
-        self.constrains.extend(cons)
+        self.constrains = np.append(self.constrains, cons)
         self.smoothing_scales.extend(smoothing_scales)
         self.signs.extend(sign)
 
