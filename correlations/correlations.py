@@ -1,6 +1,10 @@
 import numpy as np
 from numpy import sqrt, pi, cos, sin
 from scipy.integrate import dblquad
+from scipy.interpolate import interp1d
+
+import pickle
+
 from itertools import combinations_with_replacement
 from tqdm.autonotebook import tqdm
 import matplotlib.pyplot as plt
@@ -147,6 +151,51 @@ def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
     return integral
 
 
+class mydefaultdict(dict):
+    '''
+    A dictionary-like object where missing elements are computed
+    when required.
+
+    Params
+    ------
+    contructor : callable
+       Will be called for any missing item with constructor(item). It
+       should return a pickable object.
+    path : str
+        Path to the folder where to store data on disk.
+
+    Pickle file is updated each time a new element is set.'''
+
+    def __init__(self, constructor, path='.'):
+        self.constructor = constructor
+        self.path = path
+
+        self.file = os.path.join(self.path, 'correlation_functions.pickle')
+
+        os.makedirs(self.path, exist_ok=True)
+        if os.path.exists(self.file):
+            with open(self.file, 'br') as f:
+                data = pickle.load(f)
+                for k, v in data:
+                    super(mydefaultdict, self).__setitem__(k, v)
+
+    def __getitem__(self, key):
+        if key in self:
+            return super(mydefaultdict, self).__getitem__(key)
+        else:
+            val = self[key] = self.constructor(key)
+            return val
+
+    def __setitem__(self, key, val):
+        data = {}
+        for k, v in self.items():
+            data[k] = v
+
+        with open(self.file, 'bw') as f:
+            pickle.dump(data, f)
+        super(mydefaultdict, self).__setitem__(key, val)
+        
+
 class CovarianceAccessor(object):
     def __init__(self, correlator):
         self.parent = correlator
@@ -225,7 +274,7 @@ class Correlator(object):
         self.kfactor = []
         self.positions = np.zeros((0, 3))
         self.constrains = np.array([])
-        self.smoothing_scales = []
+        self.smoothing_scales = np.array([])
         self.labels = []
         self.labels_c = []
         self.signs = []
@@ -377,6 +426,19 @@ class Correlator(object):
                 labels += [r'$h_{xx}^{%(name)s}$', r'$h_{yy}^{%(name)s}$', r'$h_{zz}^{%(name)s}$',
                            r'$h_{xy}^{%(name)s}$', r'$h_{xz}^{%(name)s}$', r'$h_{yz}^{%(name)s}$']
                 add(e, 6)
+            elif e in ['third']:  # Third derivative
+                kx += [3, 0, 0, 2, 2, 1, 0, 1, 0, 1]
+                ky += [0, 3, 0, 1, 0, 2, 2, 0, 1, 1]
+                kz += [0, 0, 3, 0, 1, 0, 1, 2, 2, 1]
+                kk += [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                sign += [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+                ll = ['xxx', 'yyy', 'zzz',
+                      'xxy', 'xxz',
+                      'yyx', 'yyz',
+                      'zzx', 'zzy',
+                      'xyz']
+                labels += [r'$\delta_{' + _ + '}^{%(name)s}$' for _ in ll]
+                add(e, 10)
             else:
                 print('Do not know %s.' % e)
 
@@ -386,7 +448,7 @@ class Correlator(object):
         self.kzfactor.extend(kz)
         self.kfactor.extend(kk)
         self.constrains = np.append(self.constrains, cons)
-        self.smoothing_scales.extend(smoothing_scales)
+        self.smoothing_scales = np.concatenate((self.smoothing_scales, smoothing_scales))
         self.signs.extend(sign)
 
         # Format the labels
@@ -511,6 +573,306 @@ class Correlator(object):
             print('WARNING: the covariance matrix is not positive definite.')
 
         self._covariance_valid = True
+        return cov
+
+    @property
+    def _correlation_functions(self):
+        data = getattr(self, "_correlation_functions_data", None)
+        if data:
+            return data
+
+        N = 50
+        r = np.concatenate(([0], np.geomspace(1e-4, 30, N-1)))
+
+        def generate_data(args):
+            ikx, iky, ikz, ikk, R1, R2, sigma1, sigma2, sign1, sign2 = args
+            data = np.zeros_like(r)
+            for i, dx in enumerate(tqdm(r, desc=f'{ikx}-{iky}-{ikz}')):
+                data[i] = utils.compute_correlation(
+                    ikx, iky, ikz, ikk, dx, 0, 0,
+                    R1, R2, sigma1, sigma2,
+                    sign1, sign2)
+            return interp1d(r, data, kind='cubic', fill_value=(np.nan, 0),
+                            assume_sorted=True, bounds_error=False)
+
+        self._correlation_functions_data = mydefaultdict(generate_data,
+                                                         path='cache')
+
+        return self._correlation_functions_data
+
+        
+
+    #############################################################
+    # Compute correlation functions between dfferent modes
+    def _compute_delta_delta(self, X, R1, R2):
+        ddi = self._correlation_functions[0, 0, 0, 0, R1, R2, 0, 0, 1, 1]
+        return np.atleast_2d(ddi(np.linalg.norm(X)))
+
+    def _compute_delta_gradient(self, X, R1, R2):
+        deltagxi = self._correlation_functions[1, 0, 0, 0, R1, R2, 0, 1, 1, -1]
+        X = np.asarray(X)
+        r = np.linalg.norm(X)
+        ____0 = lambda e: 0
+        funs = [[deltagxi],
+                [   ____0],
+                [   ____0]]
+
+        # Compute the correlation in the frame of the separation
+        H0 = np.zeros((1, 3))
+        for i, row in enumerate(funs):
+            for j, f in enumerate(row):
+                H0[j, i] = f(r)
+
+        if np.allclose(X, 0):
+            return H0
+
+        # Compute rotation matrix
+        x0 = X
+        x1 = np.roll(x0, 1) - np.roll(x0, 2)
+        x2 = np.cross(x0, x1)
+        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+        x0, x1, x2 = N(x0), N(x1), N(x2)
+
+        Lambda = np.stack((x0, x1, x2)).T
+
+        H = np.einsum('ib,    ab->ai',
+                      Lambda, H0)
+
+        return H
+
+    def _compute_hessian_density(self, X, R1, R2):
+        xxi = self._correlation_functions[2, 0, 0, 0, R1, R2, 2, 0, 1, 1]
+        yyi = self._correlation_functions[0, 2, 0, 0, R1, R2, 2, 0, 1, 1]
+
+        X = np.asarray(X)
+        r = np.linalg.norm(X)
+        ____0 = lambda e: 0
+        funs = [[xxi, yyi, yyi, ____0, ____0, ____0]]
+
+        # Compute the correlation in the frame of the separation
+        H0 = np.zeros((6, 1))
+        for i, row in enumerate(funs):
+            for j, f in enumerate(row):
+                H0[j, i] = f(r)
+
+        if np.allclose(X, 0):
+            return H0
+
+        # We now have the covariance in the separation frame. For this
+        ind1 = np.array([[0, 3, 4], [3, 1, 5], [4, 5, 2]])
+        T = H0[ind1]
+
+        # Compute rotation matrix
+        x0 = X
+        x1 = np.roll(x0, 1) - np.roll(x0, 2)
+        x2 = np.cross(x0, x1)
+        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+        x0, x1, x2 = N(x0), N(x1), N(x2)
+
+        Lambda = np.stack((x0, x1, x2)).T
+        Tprime = np.einsum('ia,    jb,     abc->ijc',
+                           Lambda, Lambda, T)
+
+        # Extract relevant indices
+        ind2 = np.array([0, 4, 8, 1, 2, 5])
+        H = Tprime.reshape(9, 1)[ind2]
+
+        return H
+
+    def _compute_grad_grad(self, X, R1, R2):
+        gxgxi = self._correlation_functions[2, 0, 0, 0, R1, R2, 0, 1, 1, -1]
+        gygyi = self._correlation_functions[0, 2, 0, 0, R1, R2, 0, 1, 1, -1]
+
+        X = np.asarray(X)
+        r = np.linalg.norm(X)
+        ____0 = lambda e: 0
+        funs = [[gxgxi, ____0, ____0],
+                [____0, gygyi, ____0],
+                [____0, ____0, gygyi]]
+
+        # Compute the correlation in the frame of the separation
+        H0 = np.zeros((3, 3))
+        for i, row in enumerate(funs):
+            for j, f in enumerate(row):
+                H0[j, i] = f(r)
+
+        if np.allclose(X, 0):
+            return H0
+
+        # We now have the covariance in the separation frame. For this
+        T = H0
+
+        # Compute rotation matrix
+        x0 = X
+        x1 = np.roll(x0, 1) - np.roll(x0, 2)
+        x2 = np.cross(x0, x1)
+        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+        x0, x1, x2 = N(x0), N(x1), N(x2)
+
+        Lambda = np.stack((x0, x1, x2)).T
+        Tprime = np.einsum('ia,    jb,     ab->ij',
+                           Lambda, Lambda, T)
+
+        # Extract relevant indices
+        H = Tprime
+
+        return H
+
+    def _compute_hessian_gradient(self, X, R1, R2):
+        xxxi = self._correlation_functions[3, 0, 0, 0, R1, R2, 2, 1, 1, -1]
+        xyyi = self._correlation_functions[1, 2, 0, 0, R1, R2, 2, 1, 1, -1]
+
+        X = np.asarray(X)
+        r = np.linalg.norm(X)
+        ____0 = lambda e: 0
+        funs = [[ xxxi,  xyyi,  xyyi, ____0, ____0, ____0],
+                [____0, ____0, ____0,  xyyi, ____0, ____0],
+                [____0, ____0, ____0, ____0,  xyyi, ____0]]
+
+        # Compute the correlation in the frame of the separation
+        H0 = np.zeros((6, 3))
+        for i, row in enumerate(funs):
+            for j, f in enumerate(row):
+                H0[j, i] = f(r)
+
+        if np.allclose(X, 0):
+            return H0
+
+        # We now have the covariance in the separation frame. For this
+        ind1 = np.array([[0, 3, 4], [3, 1, 5], [4, 5, 2]])
+        T = H0[ind1]
+
+        # Compute rotation matrix
+        x0 = X
+        x1 = np.roll(x0, 1) - np.roll(x0, 2)
+        x2 = np.cross(x0, x1)
+        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+        x0, x1, x2 = N(x0), N(x1), N(x2)
+
+        Lambda = np.stack((x0, x1, x2)).T
+        Tprime = np.einsum('ia,    jb,     kc,     abc->ijk',
+                           Lambda, Lambda, Lambda, T)
+
+        # Extract relevant indices
+        ind2 = np.array([0, 4, 8, 1, 2, 5])
+        H = Tprime.reshape(9, 3)[ind2]
+
+        return H
+
+    def _compute_hessian_hessian(self, X, R1, R2):
+        X = np.asarray(X)
+
+        xxxxi = self._correlation_functions[4, 0, 0, 0, R1, R2, 2, 2, 1, 1]
+        xxyyi = self._correlation_functions[2, 2, 0, 0, R1, R2, 2, 2, 1, 1]
+        yyyyi = self._correlation_functions[0, 4, 0, 0, R1, R2, 2, 2, 1, 1]
+        yyzzi = self._correlation_functions[0, 2, 2, 0, R1, R2, 2, 2, 1, 1]
+
+        r = np.linalg.norm(X)
+        ____0 = lambda e: 0
+        funs = [[xxxxi, xxyyi, xxyyi, ____0, ____0, ____0],
+                [xxyyi, yyyyi, yyzzi, ____0, ____0, ____0],
+                [xxyyi, yyzzi, yyyyi, ____0, ____0, ____0],
+                [____0, ____0, ____0, xxyyi, ____0, ____0],
+                [____0, ____0, ____0, ____0, xxyyi, ____0],
+                [____0, ____0, ____0, ____0, ____0, yyzzi]]
+
+        # Compute the correlation in the frame of the separation
+        H0 = np.zeros_like(funs).T
+        for i, row in enumerate(funs):
+            for j, f in enumerate(row):
+                H0[i, j] = H0[j, i] = f(r)
+
+        if np.allclose(X, 0):
+            return H0
+
+        # We now have the covariance in the separation frame. For this
+        ind1 = np.array([[0, 3, 4], [3, 1, 5], [4, 5, 2]])
+        T = H0[ind1][..., ind1]
+
+        # Compute rotation matrix
+        x0 = X
+        x1 = np.roll(x0, 1) - np.roll(x0, 2)
+        x2 = np.cross(x0, x1)
+        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+        x0, x1, x2 = N(x0), N(x1), N(x2)
+
+        Lambda = np.stack((x0, x1, x2)).T
+
+        Tprime = np.einsum('ia,    jb,     kc,     ld,     abcd->ijkl',
+                           Lambda, Lambda, Lambda, Lambda, T)
+
+        # Extract relevant indices
+        ind2 = np.array([0, 4, 8, 1, 2, 5])
+        H = Tprime.reshape(9, 9)[ind2][:, ind2]
+
+        return H
+
+
+    #############################################################
+    # Wrap things up to compute covariance matrix
+    def compute_covariance_separation_frame(self):
+        # Loop over different correlation types
+        kinds = ('delta', 'grad_delta', 'hessian')
+
+        def T(fun):
+            @wraps(fun)
+            def loc(*args, **kwargs):
+                return fun(*args, **kwargs).T
+            return loc
+
+        def par(fun):
+            @wraps(fun)
+            def loc(*args, **kwargs):
+                return -fun(*args, **kwargs)
+            return loc
+
+        # Here we map the functions to the pairs of elements
+        funs = {('delta', 'grad_delta'): self._compute_delta_gradient,
+                ('grad_delta', 'delta'): T(self._compute_delta_gradient),
+
+                ('hessian', 'delta'): self._compute_hessian_density,
+                ('delta', 'hessian'): T(self._compute_hessian_density),
+
+                ('hessian', 'grad_delta'): self._compute_hessian_gradient,
+                ('grad_delta', 'hessian'): par(T(self._compute_hessian_gradient)),
+
+                ('delta', 'delta'): self._compute_delta_delta,
+                ('grad_delta', 'grad_delta'): self._compute_grad_grad,
+                ('hessian', 'hessian'): self._compute_hessian_hessian,
+               }
+
+        Ndim = len(self.kxfactor)
+        cov = np.zeros((Ndim, Ndim)) * np.nan
+
+        for k1, k2 in combinations_with_replacement(kinds, 2):
+            off1 = self.get_offset_by_value(k1).astype(int)
+            off2 = self.get_offset_by_value(k2).astype(int)
+
+            # If one of the two kinds has no elements, skip
+            if len(off1) * len(off2) == 0:
+                continue
+
+            # Get positions
+            pos1 = self.positions[off1[:, 0]]
+            pos2 = self.positions[off2[:, 0]]
+
+            R1 = self.smoothing_scales[off1[:, 0]]
+            R2 = self.smoothing_scales[off2[:, 0]]
+
+            cov_function = funs[k1, k2]
+
+            for i, x1 in enumerate(pos1):
+                for j, x2 in enumerate(pos2):
+                    d = np.linalg.norm(x1-x2)
+                    element = cov_function([d, 0, 0], R1[i], R2[j])
+
+                    items = tuple(np.meshgrid(off2[j], off1[i]))
+                    if not self.quiet:
+                        print(f'Cmputing {k1}:{k2}, i={i},j={j}, {element.shape}, {cov_function}')
+                    cov[items] = element
+                    items = tuple(np.meshgrid(off1[i], off2[j]))
+                    cov[items] = element.T
+
         return cov
 
     @property
