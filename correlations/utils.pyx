@@ -189,9 +189,13 @@ cdef class Utils:
 
         intgd = (
             k2Pk * sin_theta *
-            exppart *
-            WG(k * R1) * WG(k * R2)
+            exppart
         )
+        if R1 > 0:
+            intgd *= WG(k * R1)
+        if R2 > 0:
+            intgd *= WG(k * R2)
+
         if ikx != 0:
             intgd *= kx**ikx
         if iky != 0:
@@ -246,8 +250,13 @@ cdef class Utils:
             #     print(tmp, exppart)
 
             cur = (
-                _k2Pk[i] * sin_theta * exppart * WG(k * R1) * WG(k * R2)
+                _k2Pk[i] * sin_theta * exppart
             )
+
+            if R1 > 0:
+                cur *= WG(k * R1)
+            if R2 > 0:
+                cur *= WG(k * R2)
 
             if ikx != 0:
                 cur *= kx**ikx

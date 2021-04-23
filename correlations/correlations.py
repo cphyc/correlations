@@ -148,13 +148,10 @@ def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
     ii = ikx + iky + ikz - ikk
 
     exppart = (np.exp(-1j * (kx * dx + ky * dy + kz * dz)) * (1j) ** (ii)).real
-    intgd = (
-        k2Pk
-        * sin_theta
-        * (kx ** ikx * ky ** iky * kz ** ikz / k ** ikk)
-        * exppart
-        * np.exp(-(k2 * (R1 ** 2 + R2 ** 2) / 2))
-    )
+    intgd = k2Pk * sin_theta * (kx ** ikx * ky ** iky * kz ** ikz / k ** ikk) * exppart
+
+    if R1 + R2 > 0:
+        intgd *= np.exp(-(k2 * (R1 ** 2 + R2 ** 2) / 2))
 
     # Trapezoidal rule for integration along k direction
     integral = np.sum((intgd[1:] + intgd[:-1]) * dk) / 2
