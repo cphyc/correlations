@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: correlations
-Version: 0.0.1
+Version: 0.0.2
 Summary: Compute correlations functions for Gaussian Random Fields.
 Home-page: UNKNOWN
 Author: Corentin Cadiou
