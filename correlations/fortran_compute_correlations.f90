@@ -101,7 +101,7 @@ contains
     do i1 = 0, NTHETA-1
        thetagrid(i1) = pi * i1 / NTHETA
     end do
-        
+
     ! Loop over the positions
     do i1 = 1, npt
        do i2 = i1, npt

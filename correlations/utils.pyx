@@ -1,8 +1,11 @@
 import numpy as np
-cimport numpy as np
+
 cimport cython
-from scipy.integrate import quad, dblquad, tplquad
+cimport numpy as np
+
+from scipy.integrate import dblquad, quad, tplquad
 from scipy.special import spherical_jn
+
 # from .cubature.cubature import cubature
 
 cdef extern from "math.h":

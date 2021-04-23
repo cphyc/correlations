@@ -196,25 +196,25 @@ subroutine qag ( f, a, b, epsabs, epsrel, key, result, abserr, neval, ier )
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
+!    The routine calculates an approximation RESULT to a definite integral
 !      I = integral of F over (A,B),
 !    hopefully satisfying
 !      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
 !
-!    QAG is a simple globally adaptive integrator using the strategy of 
+!    QAG is a simple globally adaptive integrator using the strategy of
 !    Aind (Piessens, 1973).  It is possible to choose between 6 pairs of
-!    Gauss-Kronrod quadrature formulae for the rule evaluation component. 
+!    Gauss-Kronrod quadrature formulae for the rule evaluation component.
 !    The pairs of high degree of precision are suitable for handling
 !    integration difficulties due to a strongly oscillating integrand.
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -246,17 +246,17 @@ subroutine qag ( f, a, b, epsabs, epsrel, key, result, abserr, neval, ier )
 !    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
 !
 !    Output, integer ( kind = 4 ) IER, return code.
-!    0, normal and reliable termination of the routine.  It is assumed that the 
+!    0, normal and reliable termination of the routine.  It is assumed that the
 !      requested accuracy has been achieved.
-!    1, maximum number of subdivisions allowed has been achieved.  One can 
-!      allow more subdivisions by increasing the value of LIMIT in QAG. 
+!    1, maximum number of subdivisions allowed has been achieved.  One can
+!      allow more subdivisions by increasing the value of LIMIT in QAG.
 !      However, if this yields no improvement it is advised to analyze the
 !      integrand to determine the integration difficulties.  If the position
 !      of a local difficulty can be determined, such as a singularity or
-!      discontinuity within the interval) one will probably gain from 
-!      splitting up the interval at this point and calling the integrator 
-!      on the subranges.  If possible, an appropriate special-purpose 
-!      integrator should be used which is designed for handling the type 
+!      discontinuity within the interval) one will probably gain from
+!      splitting up the interval at this point and calling the integrator
+!      on the subranges.  If possible, an appropriate special-purpose
+!      integrator should be used which is designed for handling the type
 !      of difficulty involved.
 !    2, the occurrence of roundoff error is detected, which prevents the
 !      requested tolerance from being achieved.
@@ -304,19 +304,19 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
+!    The routine calculates an approximation RESULT to a definite integral
 !      I = integral of F over (A,B),
 !    hopefully satisfying
 !      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -351,17 +351,17 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
 !
 !    Output, integer ( kind = 4 ) IER, return code.
-!    0, normal and reliable termination of the routine.  It is assumed that the 
+!    0, normal and reliable termination of the routine.  It is assumed that the
 !      requested accuracy has been achieved.
-!    1, maximum number of subdivisions allowed has been achieved.  One can 
-!      allow more subdivisions by increasing the value of LIMIT in QAG. 
+!    1, maximum number of subdivisions allowed has been achieved.  One can
+!      allow more subdivisions by increasing the value of LIMIT in QAG.
 !      However, if this yields no improvement it is advised to analyze the
 !      integrand to determine the integration difficulties.  If the position
 !      of a local difficulty can be determined, such as a singularity or
-!      discontinuity within the interval) one will probably gain from 
-!      splitting up the interval at this point and calling the integrator 
-!      on the subranges.  If possible, an appropriate special-purpose 
-!      integrator should be used which is designed for handling the type 
+!      discontinuity within the interval) one will probably gain from
+!      splitting up the interval at this point and calling the integrator
+!      on the subranges.  If possible, an appropriate special-purpose
+!      integrator should be used which is designed for handling the type
 !      of difficulty involved.
 !    2, the occurrence of roundoff error is detected, which prevents the
 !      requested tolerance from being achieved.
@@ -369,7 +369,7 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !      integration interval.
 !    6, the input is invalid, because EPSABS < 0 and EPSREL < 0.
 !
-!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1 
+!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1
 !    through LAST the left and right ends of the partition subintervals.
 !
 !    Workspace, real ( kind = 4 ) RLIST(LIMIT), contains in entries 1 through LAST
@@ -378,12 +378,12 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !    Workspace, real ( kind = 4 ) ELIST(LIMIT), contains in entries 1 through LAST
 !    the absolute error estimates on the subintervals.
 !
-!    Output, integer ( kind = 4 ) IORD(LIMIT), the first K elements of which are pointers 
+!    Output, integer ( kind = 4 ) IORD(LIMIT), the first K elements of which are pointers
 !    to the error estimates over the subintervals, such that
 !    elist(iord(1)), ..., elist(iord(k)) form a decreasing sequence, with
 !    k = last if last <= (limit/2+2), and k = limit+1-last otherwise.
 !
-!    Output, integer ( kind = 4 ) LAST, the number of subintervals actually produced 
+!    Output, integer ( kind = 4 ) LAST, the number of subintervals actually produced
 !    in the subdivision process.
 !
 !  Local parameters:
@@ -641,7 +641,7 @@ subroutine qage ( f, a, b, epsabs, epsrel, key, limit, result, abserr, neval, &
 !  with the largest error estimate (to be bisected next).
 !
     call qsort ( limit, last, maxerr, errmax, elist, iord, nrmax )
- 
+
     if ( ier /= 0 .or. errsum <= errbnd ) then
       exit
     end if
@@ -670,23 +670,23 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
-!      I = integral of F over (A, +Infinity), 
-!    or 
+!    The routine calculates an approximation RESULT to a definite integral
+!      I = integral of F over (A, +Infinity),
+!    or
 !      I = integral of F over (-Infinity,A)
-!    or 
+!    or
 !      I = integral of F over (-Infinity,+Infinity),
 !    hopefully satisfying
 !      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -716,20 +716,20 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier )
 !    Output, integer ( kind = 4 ) NEVAL, the number of times the integral was evaluated.
 !
 !    Output, integer ( kind = 4 ) IER, error indicator.
-!    0, normal and reliable termination of the routine.  It is assumed that 
+!    0, normal and reliable termination of the routine.  It is assumed that
 !      the requested accuracy has been achieved.
 !    > 0,  abnormal termination of the routine.  The estimates for result
 !      and error are less reliable.  It is assumed that the requested
 !      accuracy has not been achieved.
-!    1, maximum number of subdivisions allowed has been achieved.  One can 
+!    1, maximum number of subdivisions allowed has been achieved.  One can
 !      allow more subdivisions by increasing the data value of LIMIT in QAGI
 !      (and taking the according dimension adjustments into account).
 !      However, if this yields no improvement it is advised to analyze the
 !      integrand in order to determine the integration difficulties.  If the
 !      position of a local difficulty can be determined (e.g. singularity,
 !      discontinuity within the interval) one will probably gain from
-!      splitting up the interval at this point and calling the integrator 
-!      on the subranges.  If possible, an appropriate special-purpose 
+!      splitting up the interval at this point and calling the integrator
+!      on the subranges.  If possible, an appropriate special-purpose
 !      integrator should be used, which is designed for handling the type
 !      of difficulty involved.
 !    2, the occurrence of roundoff error is detected, which prevents the
@@ -739,9 +739,9 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier )
 !      integration interval.
 !    4, the algorithm does not converge.  Roundoff error is detected in the
 !      extrapolation table.  It is assumed that the requested tolerance
-!      cannot be achieved, and that the returned result is the best which 
+!      cannot be achieved, and that the returned result is the best which
 !      can be obtained.
-!    5, the integral is probably divergent, or slowly convergent.  It must 
+!    5, the integral is probably divergent, or slowly convergent.  It must
 !      be noted that divergence can occur with any other value of IER.
 !    6, the input is invalid, because INF /= 1 and INF /= -1 and INF /= 2, or
 !      epsabs < 0 and epsrel < 0.  result, abserr, neval are set to zero.
@@ -1094,7 +1094,7 @@ subroutine qagi ( f, bound, inf, epsabs, epsrel, result, abserr, neval, ier )
 
     numrl2 = numrl2 + 1
     rlist2(numrl2) = area
-    call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres ) 
+    call qextr ( numrl2, rlist2, reseps, abseps, res3la, nres )
     ktmin = ktmin+1
 
     if ( 5 < ktmin .and. abserr < 1.0E-03 * errsum ) then
@@ -1218,7 +1218,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
+!    The routine calculates an approximation RESULT to a definite integral
 !      I = integral of F over (A,B),
 !    hopefully satisfying
 !      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
@@ -1229,19 +1229,19 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
 !
 !  Parameters:
 !
-!    Input, external real ( kind = 4 ) F, the name of the function routine, 
+!    Input, external real ( kind = 4 ) F, the name of the function routine,
 !    of the form
 !      function f ( x )
 !      real ( kind = 4 ) f
@@ -1250,7 +1250,7 @@ subroutine qagp ( f, a, b, npts2, points, epsabs, epsrel, result, abserr, &
 !
 !    Input, real ( kind = 4 ) A, B, the limits of integration.
 !
-!    Input, integer ( kind = 4 ) NPTS2, the number of user-supplied break points within 
+!    Input, integer ( kind = 4 ) NPTS2, the number of user-supplied break points within
 !    the integration range, plus 2.  NPTS2 must be at least 2.
 !
 !    Input/output, real ( kind = 4 ) POINTS(NPTS2), contains the user provided interior
@@ -1887,19 +1887,19 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
+!    The routine calculates an approximation RESULT to a definite integral
 !      I = integral of F over (A,B),
 !    hopefully satisfying
 !      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -2395,7 +2395,7 @@ subroutine qags ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
   abserr = errsum
 
 130 continue
- 
+
   if ( 2 < ier ) then
     ier = ier - 1
   end if
@@ -2415,7 +2415,7 @@ subroutine qawc ( f, a, b, c, epsabs, epsrel, result, abserr, neval, ier )
 !  Discussion:
 !
 !    The routine calculates an approximation RESULT to a Cauchy principal
-!    value 
+!    value
 !      I = integral of F*W over (A,B),
 !    with
 !      W(X) = 1 / (X-C),
@@ -2424,12 +2424,12 @@ subroutine qawc ( f, a, b, c, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -2530,7 +2530,7 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 !  Discussion:
 !
 !    The routine calculates an approximation RESULT to a Cauchy principal
-!    value   
+!    value
 !      I = integral of F*W over (A,B),
 !    with
 !      W(X) = 1 / ( X - C ),
@@ -2539,12 +2539,12 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -2609,7 +2609,7 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 !                             alist(1) and blist(1) are set to a and b
 !                             respectively.
 !
-!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1 
+!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1
 !    through LAST the left and right ends of the partition subintervals.
 !
 !    Workspace, real ( kind = 4 ) RLIST(LIMIT), contains in entries 1 through LAST
@@ -2869,7 +2869,7 @@ subroutine qawce ( f, a, b, c, epsabs, epsrel, limit, result, abserr, neval, &
 
   abserr = errsum
 
-70 continue 
+70 continue
 
   if ( aa == b ) then
     result = - result
@@ -2885,27 +2885,27 @@ subroutine qawf ( f, a, omega, integr, epsabs, result, abserr, neval, ier )
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral  
-! 
-!      I = integral of F*COS(OMEGA*X) 
-!    or 
-!      I = integral of F*SIN(OMEGA*X) 
+!    The routine calculates an approximation RESULT to a definite integral
+!
+!      I = integral of F*COS(OMEGA*X)
+!    or
+!      I = integral of F*SIN(OMEGA*X)
 !
 !    over the interval [A,+Infinity), hopefully satisfying
 !
 !      || I - RESULT || <= EPSABS.
 !
-!    If OMEGA = 0 and INTEGR = 1, the integral is calculated by means 
+!    If OMEGA = 0 and INTEGR = 1, the integral is calculated by means
 !    of QAGI, and IER has the meaning as described in the comments of QAGI.
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -2966,8 +2966,8 @@ subroutine qawf ( f, a, omega, integr, epsabs, result, abserr, neval, ier )
 !    integer ( kind = 4 ) LIMLST, gives an upper bound on the number of cycles, LIMLST >= 3.
 !    if limlst < 3, the routine will end with ier = 6.
 !
-!    integer ( kind = 4 ) MAXP1, an upper bound on the number of Chebyshev moments which 
-!    can be stored, i.e. for the intervals of lengths abs(b-a)*2**(-l), 
+!    integer ( kind = 4 ) MAXP1, an upper bound on the number of Chebyshev moments which
+!    can be stored, i.e. for the intervals of lengths abs(b-a)*2**(-l),
 !    l = 0,1, ..., maxp1-2, maxp1 >= 1.  if maxp1 < 1, the routine will end
 !    with ier = 6.
 !
@@ -3023,19 +3023,19 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
+!    The routine calculates an approximation RESULT to a definite integral
 !      I = integral of F*COS(OMEGA*X) or F*SIN(OMEGA*X) over (A,+Infinity),
 !    hopefully satisfying
 !      || I - RESULT || <= EPSABS.
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -3059,10 +3059,10 @@ subroutine qawfe ( f, a, omega, integr, epsabs, limlst, limit, maxp1, &
 !    Input, real ( kind = 4 ) EPSABS, the absolute accuracy requested.
 !
 !    Input, integer ( kind = 4 ) LIMLST, an upper bound on the number of cycles.
-!    LIMLST must be at least 1.  In fact, if LIMLST < 3, the routine 
+!    LIMLST must be at least 1.  In fact, if LIMLST < 3, the routine
 !    will end with IER= 6.
 !
-!    Input, integer ( kind = 4 ) LIMIT, an upper bound on the number of subintervals 
+!    Input, integer ( kind = 4 ) LIMIT, an upper bound on the number of subintervals
 !    allowed in the partition of each cycle, limit >= 1.
 !
 !            maxp1  - integer ( kind = 4 )
@@ -3476,19 +3476,19 @@ subroutine qawo ( f, a, b, omega, integr, epsabs, epsrel, result, abserr, &
 !    The routine calculates an approximation RESULT to a given
 !    definite integral
 !      I = Integral ( A <= X <= B ) F(X) * cos ( OMEGA * X ) dx
-!    or 
+!    or
 !      I = Integral ( A <= X <= B ) F(X) * sin ( OMEGA * X ) dx
 !    hopefully satisfying following claim for accuracy
 !      | I - RESULT | <= max ( epsabs, epsrel * |I| ).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -3616,20 +3616,20 @@ subroutine qaws ( f, a, b, alfa, beta, integr, epsabs, epsrel, result, &
 !  Discussion:
 !
 !    This routine calculates an approximation RESULT to a given
-!    definite integral   
-!      I = integral of f*w over (a,b) 
+!    definite integral
+!      I = integral of f*w over (a,b)
 !    where w shows a singular behavior at the end points, see parameter
 !    integr, hopefully satisfying following claim for accuracy
 !      abs(i-result) <= max(epsabs,epsrel*abs(i)).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -3741,19 +3741,19 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !  Discussion:
 !
 !    This routine calculates an approximation RESULT to an integral
-!      I = integral of F(X) * W(X) over (a,b), 
-!    where W(X) shows a singular behavior at the endpoints, hopefully 
+!      I = integral of F(X) * W(X) over (a,b),
+!    where W(X) shows a singular behavior at the endpoints, hopefully
 !    satisfying:
 !      | I - RESULT | <= max ( epsabs, epsrel * |I| ).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -3780,7 +3780,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !    Input, real ( kind = 4 ) EPSABS, EPSREL, the absolute and relative accuracy requested.
 !
 !    Input, integer ( kind = 4 ) LIMIT, an upper bound on the number of subintervals
-!    in the partition of (A,B), LIMIT >= 2.  If LIMIT < 2, the routine 
+!    in the partition of (A,B), LIMIT >= 2.  If LIMIT < 2, the routine
 !     will end with IER = 6.
 !
 !    Output, real ( kind = 4 ) RESULT, the estimated value of the integral.
@@ -3828,7 +3828,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !                             alist(1) and blist(1) are set to a and b
 !                             respectively.
 !
-!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1 
+!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1
 !    through LAST the left and right ends of the partition subintervals.
 !
 !    Workspace, real ( kind = 4 ) RLIST(LIMIT), contains in entries 1 through LAST
@@ -3845,7 +3845,7 @@ subroutine qawse ( f, a, b, alfa, beta, integr, epsabs, epsrel, limit, &
 !                     if last <= (limit/2+2), and k = limit+1-last
 !                     otherwise, form a decreasing sequence.
 !
-!    Output, integer ( kind = 4 ) LAST, the number of subintervals actually produced in 
+!    Output, integer ( kind = 4 ) LAST, the number of subintervals actually produced in
 !    the subdivision process.
 !
 !  Local parameters:
@@ -4130,19 +4130,19 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
 !
 !  Discussion:
 !
-!    This routine estimates 
-!      I = integral of F(X) * W(X) over (a,b) 
-!    with error estimate, where 
+!    This routine estimates
+!      I = integral of F(X) * W(X) over (a,b)
+!    with error estimate, where
 !      w(x) = 1/(x-c)
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -4161,7 +4161,7 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
 !
 !    Output, real ( kind = 4 ) RESULT, the estimated value of the integral.
 !    RESULT is computed by using a generalized Clenshaw-Curtis method if
-!    C lies within ten percent of the integration interval.  In the 
+!    C lies within ten percent of the integration interval.  In the
 !    other case the 15-point Kronrod rule obtained by optimal addition
 !    of abscissae to the 7-point Gauss rule, is applied.
 !
@@ -4209,7 +4209,7 @@ subroutine qc25c ( f, a, b, c, result, abserr, krul, neval )
   real ( kind = 4 ) hlgth
   integer ( kind = 4 ) i
   integer ( kind = 4 ) isym
-  integer ( kind = 4 ) k 
+  integer ( kind = 4 ) k
   integer ( kind = 4 ) kp
   integer ( kind = 4 ) krul
   integer ( kind = 4 ) neval
@@ -4317,27 +4317,27 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
 !      I = integral of f(x) * w(x) over (a,b)
 !    where
 !      w(x) = cos(omega*x)
-!    or 
+!    or
 !      w(x) = sin(omega*x),
 !    and estimates
 !      J = integral ( A <= X <= B ) |F(X)| dx.
 !
 !    For small values of OMEGA or small intervals (a,b) the 15-point
 !    Gauss-Kronrod rule is used.  In all other cases a generalized
-!    Clenshaw-Curtis method is used, that is, a truncated Chebyshev 
-!    expansion of the function F is computed on (a,b), so that the 
-!    integrand can be written as a sum of terms of the form W(X)*T(K,X), 
+!    Clenshaw-Curtis method is used, that is, a truncated Chebyshev
+!    expansion of the function F is computed on (a,b), so that the
+!    integrand can be written as a sum of terms of the form W(X)*T(K,X),
 !    where T(K,X) is the Chebyshev polynomial of degree K.  The Chebyshev
 !    moments are computed with use of a linear recurrence relation.
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -4556,7 +4556,7 @@ subroutine qc25o ( f, a, b, omega, integr, nrmom, maxp1, ksave, result, &
     go to 70
   end if
 !
-!  Compute the Chebyshev moments as the solutions of a boundary value 
+!  Compute the Chebyshev moments as the solutions of a boundary value
 !  problem with one initial value (v(3)) and one end value computed
 !  using an asymptotic formula.
 !
@@ -4761,22 +4761,22 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
 !
 !  Discussion:
 !
-!    This routine computes 
-!      i = integral of F(X) * W(X) over (bl,br), 
+!    This routine computes
+!      i = integral of F(X) * W(X) over (bl,br),
 !    with error estimate, where the weight function W(X) has a singular
 !    behavior of algebraico-logarithmic type at the points
-!    a and/or b. 
+!    a and/or b.
 !
 !    The interval (bl,br) is a subinterval of (a,b).
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -4796,11 +4796,11 @@ subroutine qc25s ( f, a, b, bl, br, alfa, beta, ri, rj, rg, rh, result, &
 !
 !    Input, real ( kind = 4 ) ALFA, BETA, parameters in the weight function.
 !
-!    Input, real ( kind = 4 ) RI(25), RJ(25), RG(25), RH(25), modified Chebyshev moments 
+!    Input, real ( kind = 4 ) RI(25), RJ(25), RG(25), RH(25), modified Chebyshev moments
 !    for the application of the generalized Clenshaw-Curtis method,
 !    computed in QMOMO.
 !
-!    Output, real ( kind = 4 ) RESULT, the estimated value of the integral, computed by 
+!    Output, real ( kind = 4 ) RESULT, the estimated value of the integral, computed by
 !    using a generalized clenshaw-curtis method if b1 = a or br = b.
 !    In all other cases the 15-point Kronrod rule is applied, obtained by
 !    optimal addition of abscissae to the 7-point Gauss rule.
@@ -5156,12 +5156,12 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -5171,7 +5171,7 @@ subroutine qcheb ( x, fval, cheb12, cheb24 )
 !    Input, real ( kind = 4 ) X(11), contains the values of COS(K*PI/24), for K = 1 to 11.
 !
 !    Input/output, real ( kind = 4 ) FVAL(25), the function values at the points
-!    (b+a+(b-a)*cos(k*pi/24))/2, k = 0, ...,24, where (a,b) is the 
+!    (b+a+(b-a)*cos(k*pi/24))/2, k = 0, ...,24, where (a,b) is the
 !    approximation interval.  FVAL(1) and FVAL(25) are divided by two
 !    These values are destroyed at output.
 !
@@ -5309,20 +5309,20 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
 !
 !  Discussion:
 !
-!    The routine determines the limit of a given sequence of approximations, 
-!    by means of the epsilon algorithm of P. Wynn.  An estimate of the 
+!    The routine determines the limit of a given sequence of approximations,
+!    by means of the epsilon algorithm of P. Wynn.  An estimate of the
 !    absolute error is also given.  The condensed epsilon table is computed.
 !    Only those elements needed for the computation of the next diagonal
 !    are preserved.
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -5333,7 +5333,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
 !    the new element in the first column of the epsilon table.
 !
 !    Input/output, real ( kind = 4 ) EPSTAB(52), the two lower diagonals of the triangular
-!    epsilon table.  The elements are numbered starting at the right-hand 
+!    epsilon table.  The elements are numbered starting at the right-hand
 !    corner of the triangle.
 !
 !    Output, real ( kind = 4 ) RESULT, the estimated value of the integral.
@@ -5434,7 +5434,7 @@ subroutine qextr ( n, epstab, result, abserr, res3la, nres )
     err3 = abs(delta3)
     tol3 = max ( e1abs,abs(e0))* epsilon ( e0 )
 !
-!  If e0, e1 and e2 are equal to within machine accuracy, convergence 
+!  If e0, e1 and e2 are equal to within machine accuracy, convergence
 !  is assumed.
 !
     if ( err2 <= tol2 .and. err3 <= tol3 ) then
@@ -5541,14 +5541,14 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !  Discussion:
 !
 !    This routine calculates an approximation RESULT to a definite integral
-!      I = integral of F(X) * COS(OMEGA*X) 
+!      I = integral of F(X) * COS(OMEGA*X)
 !    or
-!      I = integral of F(X) * SIN(OMEGA*X) 
+!      I = integral of F(X) * SIN(OMEGA*X)
 !    over (A,B), hopefully satisfying:
 !      | I - RESULT | <= max ( epsabs, epsrel * |I| ) ).
 !
-!    QFOUR is called by QAWO and QAWF.  It can also be called directly in 
-!    a user-written program.  In the latter case it is possible for the 
+!    QFOUR is called by QAWO and QAWF.  It can also be called directly in
+!    a user-written program.  In the latter case it is possible for the
 !    user to determine the first dimension of array CHEBMO(MAXP1,25).
 !    See also parameter description of MAXP1.  Additionally see
 !    parameter description of ICALL for eventually re-using
@@ -5557,12 +5557,12 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -5669,7 +5669,7 @@ subroutine qfour ( f, a, b, omega, integr, epsabs, epsrel, limit, icall, &
 !                             zero. alist(1) and blist(1) are set to a
 !                             and b respectively.
 !
-!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1 
+!    Workspace, real ( kind = 4 ) ALIST(LIMIT), BLIST(LIMIT), contains in entries 1
 !    through LAST the left and right ends of the partition subintervals.
 !
 !    Workspace, real ( kind = 4 ) RLIST(LIMIT), contains in entries 1 through LAST
@@ -6208,12 +6208,12 @@ subroutine qk15 ( f, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -6229,8 +6229,8 @@ subroutine qk15 ( f, a, b, result, abserr, resabs, resasc )
 !    Input, real ( kind = 4 ) A, B, the limits of integration.
 !
 !    Output, real ( kind = 4 ) RESULT, the estimated value of the integral.
-!    RESULT is computed by applying the 15-point Kronrod rule (RESK) 
-!    obtained by optimal addition of abscissae to the 7-point Gauss rule 
+!    RESULT is computed by applying the 15-point Kronrod rule (RESK)
+!    obtained by optimal addition of abscissae to the 7-point Gauss rule
 !    (RESG).
 !
 !    Output, real ( kind = 4 ) ABSERR, an estimate of | I - RESULT |.
@@ -6238,7 +6238,7 @@ subroutine qk15 ( f, a, b, result, abserr, resabs, resasc )
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
 !  Local Parameters:
@@ -6376,7 +6376,7 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
 !
 !  Discussion:
 !
-!    The original infinite integration range is mapped onto the interval 
+!    The original infinite integration range is mapped onto the interval
 !    (0,1) and (a,b) is a part of (0,1).  The routine then computes:
 !
 !    i = integral of transformed integrand over (a,b),
@@ -6384,12 +6384,12 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -6409,13 +6409,13 @@ subroutine qk15i ( f, boun, inf, a, b, result, abserr, resabs, resasc )
 !    -1: the original interval is (-infinity,BOUN),
 !    +1, the original interval is (BOUN,+infinity),
 !    +2, the original interval is (-infinity,+infinity) and
-!    the integral is computed as the sum of two integrals, one 
+!    the integral is computed as the sum of two integrals, one
 !    over (-infinity,0) and one over (0,+infinity).
 !
 !    Input, real ( kind = 4 ) A, B, the limits of integration, over a subrange of [0,1].
 !
 !    Output, real ( kind = 4 ) RESULT, the estimated value of the integral.
-!    RESULT is computed by applying the 15-point Kronrod rule (RESK) obtained 
+!    RESULT is computed by applying the 15-point Kronrod rule (RESK) obtained
 !    by optimal addition of abscissae to the 7-point Gauss rule (RESG).
 !
 !    Output, real ( kind = 4 ) ABSERR, an estimate of | I - RESULT |.
@@ -6577,19 +6577,19 @@ subroutine qk15w ( f, w, p1, p2, p3, p4, kp, a, b, result, abserr, resabs, &
 !
 !  Discussion:
 !
-!    This routine approximates 
-!      i = integral of f*w over (a,b), 
+!    This routine approximates
+!      i = integral of f*w over (a,b),
 !    with error estimate, and
 !      j = integral of abs(f*w) over (a,b)
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -6623,7 +6623,7 @@ subroutine qk15w ( f, w, p1, p2, p3, p4, kp, a, b, result, abserr, resabs, &
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
 !  Local Parameters:
@@ -6780,12 +6780,12 @@ subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -6801,8 +6801,8 @@ subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
 !    Input, real ( kind = 4 ) A, B, the limits of integration.
 !
 !    Output, real ( kind = 4 ) RESULT, the estimated value of the integral.
-!    RESULT is computed by applying the 21-point Kronrod rule (resk) 
-!    obtained by optimal addition of abscissae to the 10-point Gauss 
+!    RESULT is computed by applying the 21-point Kronrod rule (resk)
+!    obtained by optimal addition of abscissae to the 10-point Gauss
 !    rule (resg).
 !
 !    Output, real ( kind = 4 ) ABSERR, an estimate of | I - RESULT |.
@@ -6810,7 +6810,7 @@ subroutine qk21 ( f, a, b, result, abserr, resabs, resasc )
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
   implicit none
@@ -6965,12 +6965,12 @@ subroutine qk31 ( f, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -6996,7 +6996,7 @@ subroutine qk31 ( f, a, b, result, abserr, resabs, resasc )
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
   implicit none
@@ -7153,12 +7153,12 @@ subroutine qk41 ( f, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -7184,7 +7184,7 @@ subroutine qk41 ( f, a, b, result, abserr, resabs, resasc )
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
 !  Local Parameters:
@@ -7349,12 +7349,12 @@ subroutine qk51 ( f, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -7379,7 +7379,7 @@ subroutine qk51 ( f, a, b, result, abserr, resabs, resasc )
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
 !  Local Parameters:
@@ -7539,7 +7539,7 @@ subroutine qk51 ( f, a, b, result, abserr, resabs, resasc )
 
   return
 end
-subroutine qk61 ( f, a, b, result, abserr, resabs, resasc ) 
+subroutine qk61 ( f, a, b, result, abserr, resabs, resasc )
 
 !*****************************************************************************80
 !
@@ -7554,12 +7554,12 @@ subroutine qk61 ( f, a, b, result, abserr, resabs, resasc )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -7584,7 +7584,7 @@ subroutine qk61 ( f, a, b, result, abserr, resabs, resasc )
 !    Output, real ( kind = 4 ) RESABS, approximation to the integral of the absolute
 !    value of F.
 !
-!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) | 
+!    Output, real ( kind = 4 ) RESASC, approximation to the integral | F-I/(B-A) |
 !    over [A,B].
 !
 !  Local Parameters:
@@ -7770,12 +7770,12 @@ subroutine qmomo ( alfa, beta, ri, rj, rg, rh, integr )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -7918,7 +7918,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Discussion:
 !
-!    The routine calculates an approximation RESULT to a definite integral   
+!    The routine calculates an approximation RESULT to a definite integral
 !      I = integral of F over (A,B),
 !    hopefully satisfying
 !      || I - RESULT || <= max ( EPSABS, EPSREL * ||I|| ).
@@ -7929,12 +7929,12 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -7955,7 +7955,7 @@ subroutine qng ( f, a, b, epsabs, epsrel, result, abserr, neval, ier )
 !    RESULT is obtained by applying the 21-point Gauss-Kronrod rule (RES21)
 !    obtained  by optimal addition of abscissae to the 10-point Gauss rule
 !    (RES10), or by applying the 43-point rule (RES43) obtained by optimal
-!    addition of abscissae to the 21-point Gauss-Kronrod rule, or by 
+!    addition of abscissae to the 21-point Gauss-Kronrod rule, or by
 !    applying the 87-point rule (RES87) obtained by optimal addition of
 !    abscissae to the 43-point rule.
 !
@@ -8286,20 +8286,20 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 !
 !  Discussion:
 !
-!    This routine maintains the descending ordering in the list of the 
-!    local error estimates resulting from the interval subdivision process. 
-!    At each call two error estimates are inserted using the sequential 
+!    This routine maintains the descending ordering in the list of the
+!    local error estimates resulting from the interval subdivision process.
+!    At each call two error estimates are inserted using the sequential
 !    search top-down for the largest error estimate and bottom-up for the
 !    smallest error estimate.
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -8311,19 +8311,19 @@ subroutine qsort ( limit, last, maxerr, ermax, elist, iord, nrmax )
 !
 !    Input, integer ( kind = 4 ) LAST, the current number of error estimates.
 !
-!    Input/output, integer ( kind = 4 ) MAXERR, the index in the list of the NRMAX-th 
+!    Input/output, integer ( kind = 4 ) MAXERR, the index in the list of the NRMAX-th
 !    largest error.
 !
 !    Output, real ( kind = 4 ) ERMAX, the NRMAX-th largest error = ELIST(MAXERR).
 !
 !    Input, real ( kind = 4 ) ELIST(LIMIT), contains the error estimates.
 !
-!    Input/output, integer ( kind = 4 ) IORD(LAST).  The first K elements contain 
+!    Input/output, integer ( kind = 4 ) IORD(LAST).  The first K elements contain
 !    pointers to the error estimates such that ELIST(IORD(1)) through
 !    ELIST(IORD(K)) form a decreasing sequence, with
-!      K = LAST 
-!    if 
-!      LAST <= (LIMIT/2+2), 
+!      K = LAST
+!    if
+!      LAST <= (LIMIT/2+2),
 !    and otherwise
 !      K = LIMIT+1-LAST.
 !
@@ -8451,12 +8451,12 @@ function qwgtc ( x, c, p2, p3, p4, kp )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -8495,12 +8495,12 @@ function qwgto ( x, omega, p2, p3, p4, integr )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983
@@ -8545,12 +8545,12 @@ function qwgts ( x, a, b, alfa, beta, integr )
 !
 !  Author:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner
 !
 !  Reference:
 !
-!    Robert Piessens, Elise de Doncker-Kapenger, 
+!    Robert Piessens, Elise de Doncker-Kapenger,
 !    Christian Ueberhuber, David Kahaner,
 !    QUADPACK, a Subroutine Package for Automatic Integration,
 !    Springer Verlag, 1983

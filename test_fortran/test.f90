@@ -30,7 +30,7 @@ program test
   end do
 
   Pk = Pk * 2*pi**2 * 4*pi
-  
+
   call init(k, Pk, Nk, epsrel, epsabs)
 
   ! Test sigma
@@ -95,7 +95,7 @@ program test
        write (*, '(*(f10.5))') covariance(i, :) * 15
     end do
     write(*, '("t= ",f6.2," s")') time
-    
+
   end block
 
   block
@@ -126,7 +126,7 @@ program test
        write (*, '(*(f10.5))') covariance(i, :)
     end do
     write(*, '("t= ",f6.2," s")') time
-    
+
   end block
 
 end program test

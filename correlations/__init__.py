@@ -1,3 +1,3 @@
-from .correlations import Correlator, k, Pk, constrain
+from .correlations import Correlator, Pk, constrain, k
 
 all = [Correlator, k, Pk, constrain]
