@@ -4,7 +4,7 @@ from os.path import abspath, join, split
 import numpy as np
 
 _dir = split(__file__)[0]
-# fortran = CDLL(abspath(join(_dir, '_fortran_utils.so')))
+fortran = CDLL(abspath(join(_dir, "_fortran_utils.so")))
 
 
 def compute_covariance(

@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.testing import assert_allclose
-from scipy.special import jn as Jn
-from scipy.special import spherical_jn
+from scipy.special import jn as Jn, spherical_jn
 
 from correlations import correlation_functions as cf
 from correlations.correlations import Correlator, sigma

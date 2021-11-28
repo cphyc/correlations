@@ -1,0 +1,37 @@
+[build-system]
+requires = [
+  "setuptools>=19.6",
+  # see https://github.com/numpy/numpy/pull/18389
+  "wheel>=0.36.2",
+
+  # Cython 3.0 is the next version after 0.29, and a major change,
+  # we forbid it until we can properly test against it
+  "Cython>=0.29.21,<3.0",
+  "oldest-supported-numpy",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+skip =  ["venv", "benchmarks"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
