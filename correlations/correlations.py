@@ -43,7 +43,6 @@ def _correlation(
     ikx, iky, ikz, ikk, dx, dy, dz, R1, R2, sign1, sign2, nsigma1, nsigma2
 ):
     # Compute sigmas
-
     s1s2 = sign1 * sigma(nsigma1, R1) * sign2 * sigma(nsigma2, R2)
 
     # Integrate
