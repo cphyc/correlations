@@ -77,25 +77,25 @@ def test_zerolag():
     # Hessians
     indexes = ((0, 0), (1, 1), (2, 2), (0, 1), (0, 2), (1, 2))
     for i0, (i, j) in enumerate(indexes):
-        for i1, (k, l) in enumerate(indexes):
-            tmp = (K(i, j) * K(k, l) + K(i, k) * K(j, l) + K(i, l) * K(j, k)) / 15
+        for i1, (k, m) in enumerate(indexes):
+            tmp = (K(i, j) * K(k, m) + K(i, k) * K(j, m) + K(i, m) * K(j, k)) / 15
             expected[4 + i0, 4 + i1] = tmp
             expected[13 + i0, 13 + i1] = tmp
-            expected[4 + i0, 13 + i1] = -tmp * sigma1 ** 2 / sigma0 / sigma2
+            expected[4 + i0, 13 + i1] = -tmp * sigma1**2 / sigma0 / sigma2
 
     # Gradients
     expected[1:4, 1:4] = expected[10:13, 10:13] = np.eye(3) / 3
 
     # phi-tide
-    gamma = sigmam1 ** 2 / sigmam2 / sigma0
+    gamma = sigmam1**2 / sigmam2 / sigma0
     expected[0, 4:7] = -gamma / 3
 
     # phi-hessian
-    gamma = sigma0 ** 2 / sigmam2 / sigma2
+    gamma = sigma0**2 / sigmam2 / sigma2
     expected[0, 13:16] = gamma / 3
 
     # grad phi - grad nu
-    expected[1:4, 10:13] = np.eye(3) / 3 * sigma0 ** 2 / sigma1 / sigmam1
+    expected[1:4, 10:13] = np.eye(3) / 3 * sigma0**2 / sigma1 / sigmam1
 
     # Symmetrize expected matrix
     expected = np.triu(expected)
@@ -103,7 +103,6 @@ def test_zerolag():
 
     pprint(np.round(c.cov, 3)[:10, :10])
     pprint(np.round(expected, 3)[:10, :10])
-    print((c.cov - expected) / expected)
     # print(np.round(c.cov*15, 5))
     # print(np.round(expected*15, 5))
     assert np.allclose(c.cov, expected)

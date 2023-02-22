@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_allclose
-from scipy.special import jn as Jn, spherical_jn
+from scipy.special import jn, spherical_jn
 
 from correlations import correlation_functions as cf
 from correlations.correlations import Correlator, sigma
@@ -14,10 +14,10 @@ def test_helper_base():
     assert_allclose(cf.j2(x), spherical_jn(2, x), rtol=tol)
 
     assert_allclose(cf.j1_o_x(x), spherical_jn(1, x) / x, rtol=tol)
-    assert_allclose(cf.J1_o_x(x), Jn(1, x) / x, rtol=tol)
+    assert_allclose(cf.J1_o_x(x), jn(1, x) / x, rtol=tol)
 
     assert_allclose(cf.j2_o_x(x), spherical_jn(2, x) / x, rtol=tol)
-    assert_allclose(cf.j2_o_x2(x), spherical_jn(2, x) / x ** 2, rtol=tol)
+    assert_allclose(cf.j2_o_x2(x), spherical_jn(2, x) / x**2, rtol=tol)
 
 
 def test_helper_complex():
@@ -30,7 +30,7 @@ def test_helper_complex():
     assert_allclose(cf._2j2_mxj1_o_x(x), (2 * _jn(2, x) - x * _jn(1, x)) / x, rtol=tol)
     assert_allclose(
         cf._8j2_m4xj1_x2j0_o_x2(x),
-        (8 * _jn(2, x) - 4 * x * _jn(1, x) + x ** 2 * _jn(0, x)) / x ** 2,
+        (8 * _jn(2, x) - 4 * x * _jn(1, x) + x**2 * _jn(0, x)) / x**2,
         rtol=tol,
     )
 

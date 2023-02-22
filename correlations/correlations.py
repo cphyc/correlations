@@ -14,13 +14,18 @@ from scipy.interpolate import interp1d
 from tqdm.autonotebook import tqdm
 
 from .fortran_utils import compute_covariance as _f90_compute_covariance
-from .funcs import LRUCache
+from joblib import Memory
 from .utils import Utils
+
+location = "./cachedir"
+memory = Memory(location, verbose=0)
+# from .funcs import LRUCache
+# from functools import lru_cache
 
 this_dir, this_filename = os.path.split(__file__)
 
 k, Pk, _ = np.loadtxt(os.path.join(this_dir, "data", "power.dat"), skiprows=1).T
-Pk *= 2 * np.pi ** 2 * 4 * np.pi
+Pk *= 2 * np.pi**2 * 4 * np.pi
 k = k[::1]
 Pk = Pk[::1]
 
@@ -30,7 +35,7 @@ integrand_cython = utils.integrand_lambdaCDM
 
 # Pk = k**-2
 
-twopi2 = 2 * np.pi ** 2
+twopi2 = 2 * np.pi**2
 dk = np.diff(k)
 
 
@@ -38,7 +43,9 @@ def odd(i):
     return (i % 2) == 1
 
 
-@LRUCache()
+# @LRUCache()
+# @lru_cache(0)
+@memory.cache
 def _correlation(
     ikx, iky, ikz, ikk, dx, dy, dz, R1, R2, sign1, sign2, nsigma1, nsigma2
 ):
@@ -78,7 +85,7 @@ def _compute_one(
     #     return i1, i2, np.nan
 
     dX = X[i2, :] - X[i1, :]
-    d = sqrt(sum(dX ** 2))
+    d = sqrt(sum(dX**2))
     ikx, iky, ikz = (
         kxfactor[i1] + kxfactor[i2],
         kyfactor[i1] + kyfactor[i2],
@@ -125,8 +132,8 @@ def _compute_one(
 # kz = lambda theta, phi: k * cos(theta)
 
 
-k2Pk = k ** 2 * Pk / (8 * np.pi ** 3)
-k2 = k ** 2
+k2Pk = k**2 * Pk / (8 * np.pi**3)
+k2 = k**2
 dk = np.diff(k)
 
 
@@ -147,17 +154,17 @@ def integrand_python(phi, theta, ikx, iky, ikz, ikk, dx, dy, dz, R1, R2):
     ii = ikx + iky + ikz - ikk
 
     exppart = (np.exp(-1j * (kx * dx + ky * dy + kz * dz)) * (1j) ** (ii)).real
-    intgd = k2Pk * sin_theta * (kx ** ikx * ky ** iky * kz ** ikz / k ** ikk) * exppart
+    intgd = k2Pk * sin_theta * (kx**ikx * ky**iky * kz**ikz / k**ikk) * exppart
 
     if R1 + R2 > 0:
-        intgd *= np.exp(-(k2 * (R1 ** 2 + R2 ** 2) / 2))
+        intgd *= np.exp(-(k2 * (R1**2 + R2**2) / 2))
 
     # Trapezoidal rule for integration along k direction
     integral = np.sum((intgd[1:] + intgd[:-1]) * dk) / 2
     return integral
 
 
-class mydefaultdict(dict):
+class MyDefaultDict(dict):
     """
     A dictionary-like object where missing elements are computed
     when required.
@@ -306,6 +313,7 @@ class Correlator:
         else:
             self._pbar = tqdm
 
+    @staticmethod
     def invalidate_covariance(fun):
         @wraps(fun)
         def wrapper(self, *args, **kwa):
@@ -606,7 +614,6 @@ class Correlator:
                     p.imap_unordered(fun, iterator, chunksize=Ndim // 2),
                     total=Ndim * (Ndim + 1) // 2,
                 ):
-
                     cov[i1, i2] = cov[i2, i1] = value
         else:
             for i1, i2 in self._pbar(iterator, total=Ndim * (Ndim + 1) // 2):
@@ -645,7 +652,7 @@ class Correlator:
                 bounds_error=False,
             )
 
-        self._correlation_functions_data = mydefaultdict(generate_data, path="cache")
+        self._correlation_functions_data = MyDefaultDict(generate_data, path="cache")
 
         return self._correlation_functions_data
 
@@ -659,7 +666,10 @@ class Correlator:
         deltagxi = self._correlation_functions[1, 0, 0, 0, R1, R2, 0, 1, 1, -1]
         X = np.asarray(X)
         r = np.linalg.norm(X)
-        ____0 = lambda e: 0
+
+        def ____0(e):
+            return 0
+
         funs = [[deltagxi], [____0], [____0]]
 
         # Compute the correlation in the frame of the separation
@@ -675,7 +685,10 @@ class Correlator:
         x0 = X
         x1 = np.roll(x0, 1) - np.roll(x0, 2)
         x2 = np.cross(x0, x1)
-        N = lambda e: e / np.linalg.norm(e)
+
+        def N(e):
+            return e / np.linalg.norm(e)
+
         x0, x1, x2 = N(x0), N(x1), N(x2)
 
         Lambda = np.stack((x0, x1, x2)).T
@@ -690,7 +703,10 @@ class Correlator:
 
         X = np.asarray(X)
         r = np.linalg.norm(X)
-        ____0 = lambda e: 0
+
+        def ____0(e):
+            return 0
+
         funs = [[xxi, yyi, yyi, ____0, ____0, ____0]]
 
         # Compute the correlation in the frame of the separation
@@ -710,7 +726,10 @@ class Correlator:
         x0 = X
         x1 = np.roll(x0, 1) - np.roll(x0, 2)
         x2 = np.cross(x0, x1)
-        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+
+        def N(e):
+            return e / np.linalg.norm(e)  # Helper function to normalize vectors
+
         x0, x1, x2 = N(x0), N(x1), N(x2)
 
         Lambda = np.stack((x0, x1, x2)).T
@@ -728,7 +747,10 @@ class Correlator:
 
         X = np.asarray(X)
         r = np.linalg.norm(X)
-        ____0 = lambda e: 0
+
+        def ____0(e):
+            return 0
+
         funs = [[gxgxi, ____0, ____0], [____0, gygyi, ____0], [____0, ____0, gygyi]]
 
         # Compute the correlation in the frame of the separation
@@ -747,7 +769,10 @@ class Correlator:
         x0 = X
         x1 = np.roll(x0, 1) - np.roll(x0, 2)
         x2 = np.cross(x0, x1)
-        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+
+        def N(e):
+            return e / np.linalg.norm(e)  # Helper function to normalize vectors
+
         x0, x1, x2 = N(x0), N(x1), N(x2)
 
         Lambda = np.stack((x0, x1, x2)).T
@@ -764,7 +789,10 @@ class Correlator:
 
         X = np.asarray(X)
         r = np.linalg.norm(X)
-        ____0 = lambda e: 0
+
+        def ____0(e):
+            return 0
+
         funs = [
             [xxxi, xyyi, xyyi, ____0, ____0, ____0],
             [____0, ____0, ____0, xyyi, ____0, ____0],
@@ -788,7 +816,10 @@ class Correlator:
         x0 = X
         x1 = np.roll(x0, 1) - np.roll(x0, 2)
         x2 = np.cross(x0, x1)
-        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+
+        def N(e):
+            return e / np.linalg.norm(e)  # Helper function to normalize vectors
+
         x0, x1, x2 = N(x0), N(x1), N(x2)
 
         Lambda = np.stack((x0, x1, x2)).T
@@ -809,7 +840,10 @@ class Correlator:
         yyzzi = self._correlation_functions[0, 2, 2, 0, R1, R2, 2, 2, 1, 1]
 
         r = np.linalg.norm(X)
-        ____0 = lambda e: 0
+
+        def ____0(e):
+            return 0
+
         funs = [
             [xxxxi, xxyyi, xxyyi, ____0, ____0, ____0],
             [xxyyi, yyyyi, yyzzi, ____0, ____0, ____0],
@@ -836,7 +870,10 @@ class Correlator:
         x0 = X
         x1 = np.roll(x0, 1) - np.roll(x0, 2)
         x2 = np.cross(x0, x1)
-        N = lambda e: e / np.linalg.norm(e)  # Helper function to normalize vectors
+
+        def N(e):
+            return e / np.linalg.norm(e)  # Helper function to normalize vectors
+
         x0, x1, x2 = N(x0), N(x1), N(x2)
 
         Lambda = np.stack((x0, x1, x2)).T
@@ -969,7 +1006,7 @@ class Correlator:
 
             kwa.update({"norm": mpl.colors.SymLogNorm(vmin)})
 
-        plt.imshow(cov, cmap="seismic", vmin=-1, vmax=1, *args, **kwa)
+        plt.imshow(cov, *args, cmap="seismic", vmin=-1, vmax=1, **kwa)
         N, _ = cov.shape
 
         ticks = np.arange(N)
@@ -1036,9 +1073,9 @@ class Correlator:
         )
         table = "\n".join(line.strip() for line in header.split("\n"))
 
-        for i, l in enumerate(labels):
+        for i, label in enumerate(labels):
             line = "|{label}|{content}|\n".format(
-                label=l,
+                label=label,
                 content=" | ".join(
                     "$%s$" % self._fmt_element(cov[i, j], size) for j in range(N)
                 ),

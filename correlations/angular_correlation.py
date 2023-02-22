@@ -4,7 +4,7 @@ from scipy.special import spherical_jn as j
 from utils import W1G
 
 k, Pk, _ = np.loadtxt("power.dat", skiprows=1).T.astype(np.float32)
-Pk *= 2 * np.pi ** 2 * 4 * np.pi
+Pk *= 2 * np.pi**2 * 4 * np.pi
 
 R = 5  # Mpc/h
 
@@ -25,14 +25,21 @@ k2Pk = k[None, None, :] ** 2 * Pk[None, None, :]
 kR = k[None, None, :] * R
 kr = k[None, None, :] * r[:, :, None]
 WW = W1G(kR) * W1G(kR)
-xifun = lambda n, m: np.trapz(k2Pk * WW * j(n, kr) / (kr) ** m / (2 * np.pi ** 2), k)
-chifun = lambda n, m: np.trapz(k2Pk * WW * j(n, kr) * (kr) ** m / (2 * np.pi ** 2), k)
+
+
+def xifun(n, m):
+    return np.trapz(k2Pk * WW * j(n, kr) / kr**m / (2 * np.pi**2), k)
+
+
+def chifun(n, m):
+    return np.trapz(k2Pk * WW * j(n, kr) * kr**m / (2 * np.pi**2), k)
+
 
 # The limits at 0 distance are all null
 xi00 = np.where(r == 0, 0, xifun(0, 0))
 xi00p = np.where(r == 0, 0, -1 / r * chifun(1, 1))
-xi00pp = 1 / r ** 2 * (chifun(2, 2) - chifun(1, 1))
-xi00ppp = 1 / r ** 3 * (2 * chifun(0, 2) - 6 * chifun(1, 1) + chifun(1, 3))
+xi00pp = 1 / r**2 * (chifun(2, 2) - chifun(1, 1))
+xi00ppp = 1 / r**3 * (2 * chifun(0, 2) - 6 * chifun(1, 1) + chifun(1, 3))
 
 
 ###############################################################################
@@ -55,7 +62,7 @@ gradgrad = np.array([[A, _0], [_0, B]])
 _0 = np.zeros_like(phi1 + phi2)
 gradhess = (
     1
-    / r ** 2
+    / r**2
     * np.array(
         [
             [
