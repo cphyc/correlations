@@ -11,7 +11,7 @@ import numpy as np
 from numpy import cos, pi, sin, sqrt
 from scipy.integrate import dblquad
 from scipy.interpolate import interp1d
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
 
 from .fortran_utils import compute_covariance as _f90_compute_covariance
 from joblib import Memory
@@ -188,7 +188,7 @@ class MyDefaultDict(dict):
         os.makedirs(self.path, exist_ok=True)
         if os.path.exists(self.file):
             with open(self.file, "br") as f:
-                data = pickle.load(f)
+                data = pickle.load(f)  # noqa: S301
                 for k, v in data:
                     super().__setitem__(k, v)
 
@@ -282,7 +282,7 @@ class Correlator:
     be written as -1.
     """
 
-    def __init__(self, nproc=None, quiet=False):
+    def __init__(self, nproc=None, quiet=True):
         self.kxfactor = []
         self.kyfactor = []
         self.kzfactor = []
@@ -639,7 +639,7 @@ class Correlator:
         def generate_data(args):
             ikx, iky, ikz, ikk, R1, R2, sigma1, sigma2, sign1, sign2 = args
             data = np.zeros_like(r)
-            for i, dx in enumerate(tqdm(r, desc=f"{ikx}-{iky}-{ikz}")):
+            for i, dx in enumerate(r):
                 data[i] = utils.compute_correlation(
                     ikx, iky, ikz, ikk, dx, 0, 0, R1, R2, sigma1, sigma2, sign1, sign2
                 )
