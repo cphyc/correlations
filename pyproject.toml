@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "correlations"
-version = "0.0.2"
+version = "0.0.3"
 description = "Compute correlation functions for Gaussian random fields."
 readme = "README.md"
 requires-python = ">=3.11"
