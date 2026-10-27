@@ -1,20 +1,15 @@
-# pre-commit 1.1.0 is required for `exclude`
-# however `minimum_pre_commit_version` itself requires 1.15.0
-minimum_pre_commit_version: "1.15.0"
+minimum_pre_commit_version: "4.0.0"
 
 repos:
-
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+  - repo: local
     hooks:
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
--   repo: https://github.com/psf/black
-    rev: 23.7.0
-    hooks:
-    - id: black
-      language_version: python3
--   repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.278
-    hooks:
-      - id: ruff
+      - id: ruff-check
+        name: Ruff check
+        entry: ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: Ruff format
+        entry: ruff format
+        language: system
+        types: [python]

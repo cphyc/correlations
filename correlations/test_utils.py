@@ -1,7 +1,7 @@
 from pathlib import Path
-import pytest
 
 import numpy as np
+import pytest
 import scipy
 from scipy.integrate import dblquad, nquad, tplquad
 
@@ -15,7 +15,7 @@ u = Utils(k, Pk)
 
 
 def test_Pk():
-    """Test that the cython-version of Pk recovers Pk"""
+    """Test that the compiled interpolator recovers the input spectrum."""
     assert np.allclose(Pk, np.vectorize(u.Pk_CDM)(k))
 
 
@@ -34,21 +34,41 @@ def test_integrand():
     """Test the integrand is the same over a sample of theta and phi"""
     args = 0, 0, 0, 0, 0, 0, 0, 1, 1
 
+    rng = np.random.default_rng(0)
     for _ in range(1000):
-        theta = np.random.rand() * np.pi
-        phi = np.random.rand() * 2 * np.pi
+        theta = rng.random() * np.pi
+        phi = rng.random() * 2 * np.pi
 
         def check_it(theta, phi):
             intgd = np.asarray([u.integrand(kk, phi, theta, *args) for kk in k])
 
             a = integrand_python(phi, theta, 0, 0, 0, 0, 0, 0, 0, 1, 1)
-            b = np.trapz(intgd, k)
+            b = np.trapezoid(intgd, k)
             c = u.integrand_lambdaCDM(phi, theta, *args)
 
             np.testing.assert_allclose(a, b, rtol=1e-3)
             np.testing.assert_allclose(a, c, rtol=1e-3)
 
         check_it(theta, phi)
+
+
+def test_radial_integrand_derivatives_against_numpy():
+    """Validate phases and smoothing independently of the compiled kernels."""
+    rng = np.random.default_rng(274)
+    for order in range(7):
+        for _ in range(5):
+            ikx, iky, ikz = map(int, rng.multinomial(order, [1 / 3] * 3))
+            ikk = int(rng.choice([0, 2, 4]))
+            phi, theta = rng.random() * 2 * np.pi, rng.random() * np.pi
+            dx, dy, dz = rng.normal(size=3)
+            args = ikx, iky, ikz, ikk, dx, dy, dz, 1.2, 1.8
+            expected = integrand_python(phi, theta, *args)
+            np.testing.assert_allclose(
+                u.integrand_lambdaCDM(phi, theta, *args),
+                expected,
+                rtol=3e-11,
+                atol=1e-10,
+            )
 
 
 ikx, iky, ikz, ikk = 0, 0, 1, 2  # This is chosen randomly
@@ -63,6 +83,7 @@ for x in np.linspace(0, 2, 5):
                 combinations.append((x, ikx, ikk, iky, ikz, xyz.copy()))
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("combinations", combinations)
 def test_integration(combinations, recwarn):
     x, ikx, ikk, iky, ikz, xyz = combinations

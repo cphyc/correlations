@@ -1,45 +1,53 @@
 [build-system]
-requires = [
-  "setuptools>=19.6",
-  # see https://github.com/numpy/numpy/pull/18389
-  "wheel>=0.36.2",
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
 
-  # Cython 3.0 is the next version after 0.29, and a major change,
-  # we forbid it until we can properly test against it
-  "Cython>=0.29.21,<3.0",
-  "oldest-supported-numpy",
+[project]
+name = "correlations"
+version = "0.0.2"
+description = "Compute correlation functions for Gaussian random fields."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "Corentin Cadiou", email = "contact@cphyc.me"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
+dependencies = ["numpy>=2.0", "scipy>=1.11", "joblib>=1.3", "numba>=0.60", "tqdm>=4.65"]
 
+[project.optional-dependencies]
+plot = ["matplotlib>=3.7"]
+notebook = ["matplotlib>=3.7", "ipython>=8", "jupyterlab>=4"]
+dev = ["pytest>=8", "ruff>=0.9", "build>=1.2", "pre-commit>=4"]
 
-[tool.isort]
-profile = "black"
-combine_as_imports = true
-skip =  ["venv", "benchmarks"]
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+[project.urls]
+Repository = "https://github.com/cphyc/correlations"
 
+[tool.hatch.build.targets.wheel]
+packages = ["correlations"]
 
-[tool.black]
-line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311']
+[tool.hatch.build.targets.sdist]
+include = [
+    "/correlations", "/benchmarks", "/README.md", "/pyproject.toml",
+    "/.github", "/.pre-commit-config.yaml", "/.gitignore",
+]
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    "error",
-]
+testpaths = ["correlations"]
+filterwarnings = ["error"]
+markers = ["slow: multidimensional numerical integration reference checks"]
 
 [tool.ruff]
-# Enable Pyflakes `E` and `F` codes by default.
-select = ["E", "C", "F", "UP", "B", "A", "YTT", "S", "N"]
-ignore = ["N802", "N806", "N803", "N816", "C901", "UP007"]
-target-version = 'py38'
+target-version = "py311"
+extend-exclude = ["*.ipynb"]
 
-[tool.ruff.per-file-ignores]
-"**/test*.py" = ["S101"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["labellines"]
-known-third-party = [
-  "numpy",
-  "matplotlib",
-]
+known-first-party = ["correlations"]

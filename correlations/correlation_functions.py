@@ -139,7 +139,7 @@ def Gamma_dd_gTH(R1, R2, dx=0):
     kR2 = k * R2
     kr = k * dx
     intgd = 3 * k * Pk * np.exp(-1 / 2 * kR1**2) * j0(kr) * j1_o_x(kR2) / twopi2 / R2
-    return np.trapz(intgd, k)
+    return np.trapezoid(intgd, k)
 
 
 @lru_cache(None)
@@ -154,14 +154,8 @@ def Gamma_dgradd_gg(R1, R2, dx=0):
     if dx == 0:
         return 0
     r = dx
-    intgd = (
-        -(k**3)
-        * Pk
-        * np.exp(-0.5 * k**2 * (R1**2 + R2**2))
-        / twopi2
-        * j1(k * r)
-    )
-    return np.trapz(intgd, k)
+    intgd = -(k**3) * Pk * np.exp(-0.5 * k**2 * (R1**2 + R2**2)) / twopi2 * j1(k * r)
+    return np.trapezoid(intgd, k)
 
 
 @lru_cache(None)
@@ -182,22 +176,14 @@ def Gamma_dhess_gg(R1, R2, dx=0, element=None):
     kr = k * r
     if element == "r r":
         intgd = (
-            k**4
-            * Pk
-            * np.exp(-0.5 * k**2 * (R1**2 + R2**2))
-            / twopi2
-            * xj2_mj1_o_x(kr)
+            k**4 * Pk * np.exp(-0.5 * k**2 * (R1**2 + R2**2)) / twopi2 * xj2_mj1_o_x(kr)
         )
-        return np.trapz(intgd, k)
+        return np.trapezoid(intgd, k)
     elif element in ("theta theta", "phi phi"):
         intgd = (
-            -(k**4)
-            * Pk
-            * np.exp(-0.5 * k**2 * (R1**2 + R2**2))
-            / twopi2
-            * j1_o_x(kr)
+            -(k**4) * Pk * np.exp(-0.5 * k**2 * (R1**2 + R2**2)) / twopi2 * j1_o_x(kr)
         )
-        return np.trapz(intgd, k)
+        return np.trapezoid(intgd, k)
     elif element in ("r theta", "r phi", "theta phi"):
         return 0
     else:
@@ -210,11 +196,11 @@ def _Gamma_graddhess_gg_helper(R1, R2, dx, el):
     common = k**5 * Pk * np.exp(-k2R1R2 / 2) / (2 * np.pi**2)
     if el == "r r r":
         integrand = common * _2j2_mxj1_o_x(k * dx)
-        return np.trapz(integrand, k)
+        return np.trapezoid(integrand, k)
     elif el in ("r theta theta", "r phi phi"):
         print(el)
         integrand = -common * j2_o_x(k * dx)
-        return np.trapz(integrand, k)
+        return np.trapezoid(integrand, k)
     elif el in (
         "r r theta",
         "r r phi",
@@ -259,7 +245,7 @@ def Gamma_hesshess_gg_helper(R1, R2, dx, el):
             integrand = common * j2_o_x2(kr)
         else:
             return 0
-    return np.trapz(integrand, k)
+    return np.trapezoid(integrand, k)
 
 
 def Gamma_hesshess_gg(R1, R2, dx=0, element=None):
